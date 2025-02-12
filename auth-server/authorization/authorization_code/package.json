@@ -1,0 +1,22 @@
+{
+  "name": "spotify-authorization-code-example",
+  "version": "0.0.2",
+  "description": "Spotify Authorization Code flow example",
+  "author": "Spotify",
+  "expo": {
+   "doctor": {
+     "reactNativeDirectoryCheck": {
+        "listUnknownPackages": false
+     }
+   }
+ },
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "2.8.5",
+    "@cypress/request": "^3.0.7",
+    "express": "^4.21.2"
+  }
+}
