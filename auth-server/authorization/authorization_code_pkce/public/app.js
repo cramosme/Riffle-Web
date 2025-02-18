@@ -7,8 +7,8 @@
  * https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow
  */
 
-const clientId = 'yourClientIDGoesHere'; // your clientId
-const redirectUrl = 'eg:http://localhost:8080';        // your redirect URL - must be localhost URL and/or HTTPS
+const clientId = process.env.CLIENT_ID; // your clientId
+const redirectUrl = "http://127.0.0.1:8080";  // your redirect URL - must be localhost URL and/or HTTPS
 
 const authorizationEndpoint = "https://accounts.spotify.com/authorize";
 const tokenEndpoint = "https://accounts.spotify.com/api/token";
