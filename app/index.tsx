@@ -2,14 +2,14 @@ import { View, StyleSheet } from "react-native";
 import { Link } from 'expo-router';
 
 import Button from '@/components/Button';
+import SpotifyAuthorizationWithPKCE from '@/components/SpotifyAuthorizationWithPKCE';
+
 
 export default function Index() {
-  return (
-    <View style={styles.container}>
-      <Link href="http://localhost:8888">
-        <Button theme="login-button" label="Login to Spotify" />
-      </Link>
-    </View>
+   return (
+      <View style={styles.container}>
+         <SpotifyAuthorizationWithPKCE />
+      </View>
   );
 }
 
