@@ -1,24 +1,16 @@
 import { View, StyleSheet } from "react-native";
 import { Link } from 'expo-router';
 
-import Button from '@/components/Button';
-import SpotifyAuthorizationWithPKCE from '@/components/SpotifyAuthorizationWithPKCE';
+import Button from '@/app/components/Button';
+import SpotifyAuthWithPKCE from '@/app/components/SpotifyAuthWithPKCE';
 
 
 export default function Index() {
    return (
       <View style={styles.container}>
-         <SpotifyAuthorizationWithPKCE />
+         <SpotifyAuthWithPKCE/>
       </View>
   );
-}
-
-const getTokenFromUrl = (): Record<string, string> => {
-  return window.location.hash.substring(1).split('&').reduce((initial, item) => {
-    let parts = item.split("=");
-    initial[parts[0]] = decodeURIComponent(parts[1]);
-    return initial;
-  }, {} as Record<string, string>);
 }
 
 const styles = StyleSheet.create({
