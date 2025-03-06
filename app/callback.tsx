@@ -16,12 +16,15 @@ export default function Callback() {
    const [isLoggedIn, setIsLoggedIn] = useState(false);
    const [userData, setUserData] = useState(null);
    const router = useRouter();
+   const isWeb = Platform.OS === 'web';
 
    useEffect(() => {
       const exchangeCodeForToken = async () => {
          if (!code) {
             console.error('Authorization code not found.');
             setIsLoggedIn(false);
+            if (!isWeb) router.replace('/'); // redirect to the home page after failure
+            else window.location.href = 'http://localhost:8081';
             await sleep(500);
             return;
          }
@@ -31,6 +34,8 @@ export default function Callback() {
             if (!codeVerifier) {
                console.error('Code verifier not found');
                setIsLoggedIn(false); // Set to false if code verifier is not found
+               if (!isWeb) router.replace('/'); // redirect to the home page after failure
+               else window.location.href = 'http://localhost:8081';
                await sleep(500);
                return;
             }
@@ -74,14 +79,18 @@ export default function Callback() {
             } else {
                console.error('Error getting access token:', data);
                setIsLoggedIn(false); // Set to false if no access token
-
+               if (!isWeb) router.replace('/'); // redirect to the home page after failure
+               else window.location.href = 'http://localhost:8081';
                await sleep(500);
+               return;
             }
          } catch (error) {
             console.error('Error exchanging code for token:', error);
             setIsLoggedIn(false); // Set to false if no access token
-
+            if (!isWeb) router.replace('/'); // redirect to the home page after failure
+            else window.location.href = 'http://localhost:8081';
             await sleep(500);
+            return;
          }
       };
 
