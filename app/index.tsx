@@ -1,9 +1,5 @@
 import { View, StyleSheet } from "react-native";
-import { Link } from 'expo-router';
-
-import Button from '@/app/components/Button';
 import SpotifyAuthWithPKCE from '@/app/components/SpotifyAuthWithPKCE';
-
 
 export default function Index() {
    return (

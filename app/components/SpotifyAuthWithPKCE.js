@@ -1,9 +1,12 @@
-import { useState } from 'react';
 import * as WebBrowser from 'expo-web-browser';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from 'react-native';
 import { Platform } from 'react-native';
+import * as Crypto from 'expo-crypto';
+
+const isWeb = Platform.OS === 'web'; // Check if it's web
+
 
 // Helper function to generate a random string for code_verifier
 const generateRandomString = (length) => {
@@ -14,9 +17,16 @@ const generateRandomString = (length) => {
 
 // Helper function to hash the code_verifier
 const sha256 = async (plain) => {
-   const encoder = new TextEncoder();
-   const data = encoder.encode(plain);
-   return window.crypto.subtle.digest('SHA-256', data); // Web-specific
+   if(!isWeb){
+      const hashed = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, plain);
+      return hashed;
+   }
+   else{
+      const encoder = new TextEncoder();
+      const data = encoder.encode(plain);
+      const hash = await window.crypto.subtle.digest('SHA-256', data); // Web-specific
+      return hash;
+   }
 }
 
 // Helper function for base64 encoding
@@ -28,7 +38,6 @@ const base64encode = (input) => {
 }
 
 export default function SpotifyAuth() {
-   const isWeb = Platform.OS === 'web'; // Check if it's web
 
    const handleLogin = async () => {
       // Generate the code_verifier and code_challenge
