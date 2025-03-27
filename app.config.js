@@ -15,6 +15,7 @@ module.exports = {
        supportsTablet: true,
      },
      android: {
+       package: 'com.testing.riffle',
        adaptiveIcon: {
          foregroundImage: './assets/images/adaptive-icon.png',
          backgroundColor: '#ffffff',
