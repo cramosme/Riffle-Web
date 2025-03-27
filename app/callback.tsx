@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+import { Platform, View, Text, ScrollView } from 'react-native';
 import { Int32 } from 'react-native/Libraries/Types/CodegenTypes';
 
 const clientId = Constants.expoConfig?.extra?.CLIENT_ID;
-const redirectUri = 'http://localhost:8081/callback'; // Native redirect URI
+const isWeb = Platform.OS === 'web';
+const redirectUri = isWeb
+   ? 'http://localhost:8081/callback'
+   : 'riffle-auth-login://callback';
 
 const sleep = (ms: Int32) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -16,15 +19,14 @@ export default function Callback() {
    const [isLoggedIn, setIsLoggedIn] = useState(false);
    const [userData, setUserData] = useState(null);
    const router = useRouter();
-   const isWeb = Platform.OS === 'web';
 
    useEffect(() => {
       const exchangeCodeForToken = async () => {
          if (!code) {
             console.error('Authorization code not found.');
             setIsLoggedIn(false);
-            if (!isWeb) router.replace('/'); // redirect to the home page after failure
-            else window.location.href = 'http://localhost:8081';
+            // if (!isWeb) router.replace('/'); // redirect to the home page after failure
+            //else window.location.href = 'http://localhost:8081';
             await sleep(500);
             return;
          }
@@ -34,8 +36,8 @@ export default function Callback() {
             if (!codeVerifier) {
                console.error('Code verifier not found');
                setIsLoggedIn(false); // Set to false if code verifier is not found
-               if (!isWeb) router.replace('/'); // redirect to the home page after failure
-               else window.location.href = 'http://localhost:8081';
+               // if (!isWeb) router.replace('/'); // redirect to the home page after failure
+               //else window.location.href = 'http://localhost:8081';
                await sleep(500);
                return;
             }
@@ -79,16 +81,16 @@ export default function Callback() {
             } else {
                console.error('Error getting access token:', data);
                setIsLoggedIn(false); // Set to false if no access token
-               if (!isWeb) router.replace('/'); // redirect to the home page after failure
-               else window.location.href = 'http://localhost:8081';
+               // if (!isWeb) router.replace('/'); // redirect to the home page after failure
+               //else window.location.href = 'http://localhost:8081';
                await sleep(500);
                return;
             }
          } catch (error) {
             console.error('Error exchanging code for token:', error);
             setIsLoggedIn(false); // Set to false if no access token
-            if (!isWeb) router.replace('/'); // redirect to the home page after failure
-            else window.location.href = 'http://localhost:8081';
+            // if (!isWeb) router.replace('/'); // redirect to the home page after failure
+            //else window.location.href = 'http://localhost:8081';
             await sleep(500);
             return;
          }
@@ -134,22 +136,20 @@ export default function Callback() {
    };
 
    return(
-      <div>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}>
          {isLoggedIn ? (
-            <div>
-               <h1>Login Successful!</h1>
-               {userData && (
-                  <div>
-                     <h2>User Info:</h2>
-                     <pre>{JSON.stringify(userData, null, 2)}</pre>
-                  </div>
-               )}
-            </div>
-            //send to new page
+         <View>
+            <Text style={{ fontSize: 24, fontWeight: 'bold' }}>Login Successful!</Text>
+            {userData && (
+               <View>
+               <Text style={{ fontSize: 20 }}>User Info:</Text>
+               <Text>{JSON.stringify(userData, null, 2)}</Text>
+               </View>
+            )}
+         </View>
          ) : (
-            <h1>Exited Login</h1>
-         )
-         }
-      </div>
+         <Text style={{ fontSize: 24, fontWeight: 'bold' }}>Exited Login</Text>
+         )}
+    </ScrollView>
    );
 }

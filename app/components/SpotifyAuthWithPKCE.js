@@ -1,22 +1,24 @@
-import { useState } from 'react';
 import * as WebBrowser from 'expo-web-browser';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Button } from 'react-native';
+import { Button, View } from 'react-native';
 import { Platform } from 'react-native';
+import * as Crypto from 'expo-crypto';
+
+const isWeb = Platform.OS === 'web'; // Check if it's web
+
 
 // Helper function to generate a random string for code_verifier
-const generateRandomString = (length) => {
+async function generateRandomString(length) {
    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-   const values = crypto.getRandomValues(new Uint8Array(length)); // Web-specific
-   return values.reduce((acc, x) => acc + possible[x % possible.length], "");
-}
-
-// Helper function to hash the code_verifier
-const sha256 = async (plain) => {
-   const encoder = new TextEncoder();
-   const data = encoder.encode(plain);
-   return window.crypto.subtle.digest('SHA-256', data); // Web-specific
+   let randomValues;
+   if( isWeb ){
+      randomValues = crypto.getRandomValues(new Uint8Array(length));
+   } 
+   else{
+      randomValues = await Crypto.getRandomBytesAsync(length);
+   }
+   return randomValues.reduce((acc, x) => acc + possible[x % possible.length], "");
 }
 
 // Helper function for base64 encoding
@@ -27,14 +29,35 @@ const base64encode = (input) => {
      .replace(/\//g, '_');
 }
 
+// Helper function to make any base64 string URL-safe
+const makeUrlSafe = (base64String) => {
+   return base64String.replace(/=/g, '')
+                      .replace(/\+/g, '-')
+                      .replace(/\//g, '_');
+ }
+
+// Helper function to hash the code_verifier
+const sha256 = async (plain) => {
+   if(!isWeb){
+      const hashed = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, plain, {encoding: 'base64' });
+      return makeUrlSafe(hashed);
+   }
+   else{
+      const encoder = new TextEncoder();
+      const data = encoder.encode(plain);
+      const hash = await window.crypto.subtle.digest('SHA-256', data); // Web-specific
+      return base64encode(hash);
+   }
+}
+
+
 export default function SpotifyAuth() {
-   const isWeb = Platform.OS === 'web'; // Check if it's web
 
    const handleLogin = async () => {
       // Generate the code_verifier and code_challenge
-      const codeVerifier = generateRandomString(64);
-      const hashed = await sha256(codeVerifier);
-      const codeChallenge = base64encode(hashed);
+      const codeVerifier = await generateRandomString(64);
+      const codeChallenge = await sha256(codeVerifier);
+      // const codeChallenge = base64encode(hashed);
 
       // Store code_verifier for later use
       if (isWeb) {
@@ -68,13 +91,13 @@ export default function SpotifyAuth() {
       if (isWeb) {
          window.location.href = authUrl.toString(); // Web redirect
       } else {
-         WebBrowser.openBrowserAsync(authUrl.toString()); // Native browser
+         WebBrowser.openAuthSessionAsync(authUrl.toString(), redirectUri); // Native browser
       }
    };
 
    return(
-      <div>
+      <View>
          <Button title="Login with Spotify" onPress={handleLogin} />
-      </div>
+      </View>
    );
 }
