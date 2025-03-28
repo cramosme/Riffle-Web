@@ -1,5 +1,5 @@
-import { Stack } from 'expo-router';
-import { Image, View, Text, StyleSheet } from 'react-native';
+import { Link, Stack } from 'expo-router';
+import { Image, View, Text } from 'react-native';
 
 
 const RiffleLogo = require('@/assets/images/riffle_logo.png');
@@ -22,15 +22,22 @@ export default function RootLayout() {
           </View>
         ),
       }}>
-      <Stack.Screen name="stats" options={{ title: 'Stats' }} />
-      <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+      <Stack.Screen name="stats" options={{ 
+        title: 'Stats',
+        headerRight: () => (
+          <Link href="/settings" style={{ marginRight: 40, fontFamily: 'sans', fontSize: 25, fontWeight: 'bold', color: 'white' }}>
+            Settings
+          </Link>
+        ),
+      }} />
+      <Stack.Screen name="settings" options={{
+         title: 'Settings',
+         headerRight: () => (
+          <Link href="/stats" style={{ marginRight: 40, fontFamily: 'sans', fontSize: 25, fontWeight: 'bold', color: 'white' }}>
+            Stats
+          </Link>
+         ), 
+      }} />
     </Stack>
   );
 }
-
-const styles = StyleSheet.create({
-  image: {
-    width: 100,
-    height: 200,
-  }
-})
