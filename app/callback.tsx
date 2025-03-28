@@ -2,16 +2,10 @@ import { useEffect, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform, View, Text, ScrollView } from 'react-native';
-import { Int32 } from 'react-native/Libraries/Types/CodegenTypes';
+import { View, Text, ScrollView } from 'react-native';
 
 const clientId = Constants.expoConfig?.extra?.CLIENT_ID;
-const isWeb = Platform.OS === 'web';
-const redirectUri = isWeb
-   ? 'http://localhost:8081/callback'
-   : 'riffle-auth-login://callback';
-
-const sleep = (ms: Int32) => new Promise(resolve => setTimeout(resolve, ms));
+const redirectUri = 'http://localhost:8081/callback'
 
 
 export default function Callback() {
@@ -25,9 +19,7 @@ export default function Callback() {
          if (!code) {
             console.error('Authorization code not found.');
             setIsLoggedIn(false);
-            // if (!isWeb) router.replace('/'); // redirect to the home page after failure
-            //else window.location.href = 'http://localhost:8081';
-            await sleep(500);
+            window.location.href = 'http://localhost:8081';
             return;
          }
 
@@ -36,9 +28,7 @@ export default function Callback() {
             if (!codeVerifier) {
                console.error('Code verifier not found');
                setIsLoggedIn(false); // Set to false if code verifier is not found
-               // if (!isWeb) router.replace('/'); // redirect to the home page after failure
-               //else window.location.href = 'http://localhost:8081';
-               await sleep(500);
+               window.location.href = 'http://localhost:8081';
                return;
             }
 
@@ -76,22 +66,17 @@ export default function Callback() {
                fetchUserData(data.access_token);
 
                setIsLoggedIn(true);
-               await sleep(500);
 
             } else {
                console.error('Error getting access token:', data);
                setIsLoggedIn(false); // Set to false if no access token
-               // if (!isWeb) router.replace('/'); // redirect to the home page after failure
-               //else window.location.href = 'http://localhost:8081';
-               await sleep(500);
+               window.location.href = 'http://localhost:8081';
                return;
             }
          } catch (error) {
             console.error('Error exchanging code for token:', error);
             setIsLoggedIn(false); // Set to false if no access token
-            // if (!isWeb) router.replace('/'); // redirect to the home page after failure
-            //else window.location.href = 'http://localhost:8081';
-            await sleep(500);
+            window.location.href = 'http://localhost:8081';
             return;
          }
       };
