@@ -10,7 +10,6 @@ const redirectUri = 'http://localhost:8081/callback'
 
 export default function Callback() {
    const { code } = useLocalSearchParams(); // Get the `code` from the URL query params
-   const [isLoggedIn, setIsLoggedIn] = useState(false);
    const [userData, setUserData] = useState(null);
    const router = useRouter();
 
@@ -18,8 +17,7 @@ export default function Callback() {
       const exchangeCodeForToken = async () => {
          if (!code) {
             console.error('Authorization code not found.');
-            setIsLoggedIn(false);
-            window.location.href = 'http://localhost:8081';
+            router.replace('/');
             return;
          }
 
@@ -27,8 +25,7 @@ export default function Callback() {
             const codeVerifier = await AsyncStorage.getItem('code_verifier');
             if (!codeVerifier) {
                console.error('Code verifier not found');
-               setIsLoggedIn(false); // Set to false if code verifier is not found
-               window.location.href = 'http://localhost:8081';
+               router.replace('/');
                return;
             }
 
@@ -62,21 +59,16 @@ export default function Callback() {
                   await AsyncStorage.setItem('token_expiry', expiryTime.toString());
                }
 
-               sendTokenToBackend(data.access_token, data.refresh_token || null, expiryTime);
-               fetchUserData(data.access_token);
-
-               setIsLoggedIn(true);
+               router.replace('/stats');
 
             } else {
                console.error('Error getting access token:', data);
-               setIsLoggedIn(false); // Set to false if no access token
-               window.location.href = 'http://localhost:8081';
+               router.replace('/');
                return;
             }
          } catch (error) {
             console.error('Error exchanging code for token:', error);
-            setIsLoggedIn(false); // Set to false if no access token
-            window.location.href = 'http://localhost:8081';
+            router.replace('/');
             return;
          }
       };
@@ -122,19 +114,15 @@ export default function Callback() {
 
    return(
       <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}>
-         {isLoggedIn ? (
          <View>
-            <Text style={{ fontSize: 24, fontWeight: 'bold' }}>Login Successful!</Text>
+            {/* <Text style={{ fontSize: 24, fontWeight: 'bold' }}>Login Successful!</Text>
             {userData && (
                <View>
                <Text style={{ fontSize: 20 }}>User Info:</Text>
                <Text>{JSON.stringify(userData, null, 2)}</Text>
                </View>
-            )}
+            )} */}
          </View>
-         ) : (
-         <Text style={{ fontSize: 24, fontWeight: 'bold' }}>Exited Login</Text>
-         )}
     </ScrollView>
    );
 }

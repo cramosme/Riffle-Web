@@ -74,8 +74,33 @@ export default function SpotifyAuth() {
          ? 'http://localhost:8081/callback'
          : 'riffle-auth-login://callback'; // Custom scheme for mobile
 
-      const scope = 'user-read-private user-read-email playlist-modify-public';
-      
+      const scope = [
+         // Images
+         'ugc-image-upload',
+         // Spotify Connect
+         'user-read-playback-state',
+         'user-modify-playback-state',
+         'user-read-currently-playing',
+         // Playback
+         'streaming',
+         'app-remote-control',
+         // Users
+         'user-read-email',
+         'user-read-private',
+         // Playlists
+         'playlist-read-collaborative',
+         'playlist-modify-public',
+         'playlist-read-private',
+         'playlist-modify-private',
+         // Library
+         'user-library-modify',
+         'user-library-read',
+         // Listening History
+         'user-top-read',
+         'user-read-playback-position',
+         'user-read-recently-played',
+      ].join(' ');
+
       const authUrl = new URL("https://accounts.spotify.com/authorize");
       const params = {
          response_type: 'code',
