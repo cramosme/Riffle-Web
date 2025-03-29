@@ -1,5 +1,7 @@
 import { Link, Stack } from 'expo-router';
-import { Image, View, Text } from 'react-native';
+import { Image, View, Text, StyleSheet } from 'react-native';
+import SpotifyAuthWithPKCE from '@/app/components/SpotifyAuthWithPKCE';
+import { useFonts } from 'expo-font'
 
 
 const RiffleLogo = require('@/assets/images/riffle_logo.png');
@@ -16,7 +18,7 @@ export default function RootLayout() {
         headerTitle: () => (
           <View style={{ flexDirection: 'row', alignItems: 'center'}}>
             <Image source={RiffleLogo} style={{ width:50, height:50, marginLeft: 40}}/>
-            <Text style={{ paddingHorizontal: 10, fontFamily: 'sans', fontSize: 25, fontWeight: 'bold', color: 'white' }}>
+            <Text style={{ paddingHorizontal: 10, fontFamily: 'Lato-Bold', fontSize: 25, fontWeight: 'bold', color: 'white' }}>
                Riffle
             </Text>
           </View>
@@ -37,6 +39,12 @@ export default function RootLayout() {
             Stats
           </Link>
          ), 
+      }} />
+      <Stack.Screen name="index" options={{
+        title: 'Home',
+        headerRight: () => (
+          <SpotifyAuthWithPKCE/>
+        ),
       }} />
     </Stack>
   );

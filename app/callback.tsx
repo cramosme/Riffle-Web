@@ -10,7 +10,6 @@ const redirectUri = 'http://localhost:8081/callback'
 
 export default function Callback() {
    const { code } = useLocalSearchParams(); // Get the `code` from the URL query params
-   const [userData, setUserData] = useState(null);
    const router = useRouter();
 
    useEffect(() => {
@@ -59,6 +58,7 @@ export default function Callback() {
                   await AsyncStorage.setItem('token_expiry', expiryTime.toString());
                }
 
+               sendTokenToBackend(data.access_token, data.refresh_token || null, expiryTime);
                router.replace('/stats');
 
             } else {
@@ -95,34 +95,35 @@ export default function Callback() {
       }
    }
 
-   async function fetchUserData(token:string) {
-      try{
-         const response = await fetch('http://localhost:3000/me',{
-            method: 'GET',
-            headers: {
-               Authorization: `Bearer ${token}`,
-            },
-         });
-         const data = await response.json();
-         console.log('User Info:', data);
-         setUserData(data);
-      }
-      catch(error){
-         console.error('Error fetching user data', error);
-      }
-   };
-
-   return(
-      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}>
-         <View>
-            {/* <Text style={{ fontSize: 24, fontWeight: 'bold' }}>Login Successful!</Text>
-            {userData && (
-               <View>
-               <Text style={{ fontSize: 20 }}>User Info:</Text>
-               <Text>{JSON.stringify(userData, null, 2)}</Text>
-               </View>
-            )} */}
-         </View>
-    </ScrollView>
-   );
 }
+//    async function fetchUserData(token:string) {
+//       try{
+//          const response = await fetch('http://localhost:3000/me',{
+//             method: 'GET',
+//             headers: {
+//                Authorization: `Bearer ${token}`,
+//             },
+//          });
+//          const data = await response.json();
+//          console.log('User Info:', data);
+//          setUserData(data);
+//       }
+//       catch(error){
+//          console.error('Error fetching user data', error);
+//       }
+//    };
+
+//    return(
+//       <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}>
+//          <View>
+//             {/* <Text style={{ fontSize: 24, fontWeight: 'bold' }}>Login Successful!</Text>
+//             {userData && (
+//                <View>
+//                <Text style={{ fontSize: 20 }}>User Info:</Text>
+//                <Text>{JSON.stringify(userData, null, 2)}</Text>
+//                </View>
+//             )} */}
+//          </View>
+//     </ScrollView>
+//    );
+// }

@@ -1,54 +1,42 @@
-import { StyleSheet, View, Pressable, Text } from 'react-native';
+import React from 'react';
+import { Pressable, Text, StyleSheet, GestureResponderEvent } from 'react-native';
+import { useFonts } from 'expo-font'
 
-type Props = {
-   label: string;
-   theme?: 'login-button';
-   onPress?: () => void;
+type CustomButtonProps = {
+  label: string;
+  onPress: (event: GestureResponderEvent) => void;
 };
 
-export default function Button({ label, theme, onPress }: Props) {
-   if( theme === 'login-button' ){
-      return (
-         <View style={[
-            styles.buttonContainer,
-         ]}>
-         <Pressable 
-            style={[styles.button, { backgroundColor: '#fff' }]} 
-            onPress={onPress}>
-            <Text style={[styles.buttonLabel, { color: '#25292e' }]}>{label}</Text>
-            </Pressable>
-         </View>
-      );
-   }
-
-   return (
-      <View style={styles.buttonContainer}>
-         <Pressable style={styles.button} onPress={onPress}>
-            <Text style={styles.buttonLabel}>{label}</Text>
-         </Pressable>
-      </View>
-   );
+export default function CustomButton({ label, onPress }: CustomButtonProps) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.button,
+        pressed && styles.buttonPressed,
+      ]}
+    >
+      <Text style={styles.buttonText}>{label}</Text>
+    </Pressable>
+  );
 }
 
 const styles = StyleSheet.create({
-   buttonContainer: {
-     width: 320,
-     height: 68,
-     marginHorizontal: 20,
-     alignItems: 'center',
-     justifyContent: 'center',
-     padding: 3,
-   },
-   button: {
-     borderRadius: 10,
-     width: '100%',
-     height: '100%',
-     alignItems: 'center',
-     justifyContent: 'center',
-     flexDirection: 'row',
-   },
-   buttonLabel: {
-     color: '#fff',
-     fontSize: 16,
-   },
- });
+  button: {
+    backgroundColor: '#0eaa45',
+    borderRadius: 15, // increased roundness
+    paddingVertical: 12, // extra vertical padding
+    paddingHorizontal: 20, // extra horizontal padding
+    marginRight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonPressed: {
+    backgroundColor: '#0c8a3e', // a slightly different shade when pressed
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 20,
+    fontFamily: 'Lato-Black', // Ensure Lato is loaded using expo-font
+  },
+});

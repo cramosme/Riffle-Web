@@ -1,12 +1,11 @@
 /* Index is home page */
 
 import { Text, View, StyleSheet } from "react-native";
-import SpotifyAuthWithPKCE from '@/app/components/SpotifyAuthWithPKCE';
 
 export default function Index() {
    return (
       <View style={styles.container}>
-         <SpotifyAuthWithPKCE/>
+        
       </View>
   );
 }

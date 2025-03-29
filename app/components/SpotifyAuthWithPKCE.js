@@ -1,9 +1,10 @@
 import * as WebBrowser from 'expo-web-browser';
+import React from 'react';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Button, View } from 'react-native';
-import { Platform } from 'react-native';
+import { Button, View, StyleSheet, Pressable, Platform } from 'react-native';
 import * as Crypto from 'expo-crypto';
+import CustomButton from './Button';
 
 const isWeb = Platform.OS === 'web'; // Check if it's web
 
@@ -121,8 +122,14 @@ export default function SpotifyAuth() {
    };
 
    return(
-      <View>
-         <Button title="Login with Spotify" onPress={handleLogin} />
+      <View style={styles.buttonContainer}>
+         <CustomButton label="Login" onPress={handleLogin}/>
       </View>
    );
 }
+
+const styles = StyleSheet.create({
+   buttonContainer: {
+     marginRight: 40,
+   },
+ });
