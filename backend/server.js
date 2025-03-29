@@ -76,6 +76,24 @@ app.get('/me', async (req,res) => {
    }
 });
 
+/* GetUsersTopArtists */
+app.get('/me/top/artists', async (req,res) => {
+   if(!accessToken){
+      return res.status(401).json({error: 'No access token available'});
+   }
+
+   try{
+      const response = await axios.get('https://api.spotify.com/v1/me/top/artists', {
+         headers: { Authorization: `Bearer ${accessToken}`}
+      });
+      res.json(response.data);
+   }
+   catch(error){
+      console.error('Error fetching user data:', error.response?.data || error.message);
+      res.status(500).json({ error: 'Failed to fetch user data' });
+   }
+});
+
 const PORT = 3000;
 app.listen(PORT, () => {
    console.log(`Server running on http://localhost:${PORT}`);
