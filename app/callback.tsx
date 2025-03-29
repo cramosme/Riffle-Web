@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, ScrollView } from 'react-native';
 
 const clientId = Constants.expoConfig?.extra?.CLIENT_ID;
 const redirectUri = 'http://localhost:8081/callback'
@@ -96,34 +95,3 @@ export default function Callback() {
    }
 
 }
-//    async function fetchUserData(token:string) {
-//       try{
-//          const response = await fetch('http://localhost:3000/me',{
-//             method: 'GET',
-//             headers: {
-//                Authorization: `Bearer ${token}`,
-//             },
-//          });
-//          const data = await response.json();
-//          console.log('User Info:', data);
-//          setUserData(data);
-//       }
-//       catch(error){
-//          console.error('Error fetching user data', error);
-//       }
-//    };
-
-//    return(
-//       <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}>
-//          <View>
-//             {/* <Text style={{ fontSize: 24, fontWeight: 'bold' }}>Login Successful!</Text>
-//             {userData && (
-//                <View>
-//                <Text style={{ fontSize: 20 }}>User Info:</Text>
-//                <Text>{JSON.stringify(userData, null, 2)}</Text>
-//                </View>
-//             )} */}
-//          </View>
-//     </ScrollView>
-//    );
-// }

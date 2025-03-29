@@ -1,6 +1,5 @@
-import { Text, View, StyleSheet, ScrollView } from 'react-native';
+import { Text, View, StyleSheet, ScrollView, Image } from 'react-native';
 import { useState, useEffect } from 'react';
-
 
 export default function Stats () {
   const [userData, setUserData] = useState(null);
@@ -25,11 +24,11 @@ export default function Stats () {
     return(
       <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}>
          <View>
-            <Text style={{ fontSize: 24, fontWeight: 'bold' }}>Login Successful!</Text>
             {userData && (
                <View>
-               <Text style={{ fontSize: 20 }}>User Info:</Text>
-               <Text>{JSON.stringify(userData, null, 2)}</Text>
+                  <Text style={{ fontSize: 20 }}>{userData['display_name']}</Text>
+                  <Image source={{ uri: userData['images'][0]['url'] }} style={{ width: userData['images'][0]['width'], height: userData['images'][0]['height'] }} />
+                  <Text>{JSON.stringify(userData, null, 2)}</Text>
                </View>
             )}
          </View>
