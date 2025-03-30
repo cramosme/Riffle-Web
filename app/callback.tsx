@@ -57,7 +57,7 @@ export default function Callback() {
                   await AsyncStorage.setItem('token_expiry', expiryTime.toString());
                }
 
-               sendTokenToBackend(data.access_token, data.refresh_token || null, expiryTime);
+               await sendTokenToBackend(data.access_token, data.refresh_token || null, expiryTime);
                router.replace('/stats');
 
             } else {
