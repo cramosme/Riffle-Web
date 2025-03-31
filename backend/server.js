@@ -1,3 +1,4 @@
+require('dotenv').config({ path: '../.env' });
 const supabase = require('../lib/supabaseclient'); // Database access
 const express = require('express');  // Web server framework
 const axios = require('axios');  // Makes HTTP requests

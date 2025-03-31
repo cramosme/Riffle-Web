@@ -1,6 +1,5 @@
 import React from 'react';
 import { Pressable, Text, StyleSheet, GestureResponderEvent } from 'react-native';
-import { useFonts } from 'expo-font'
 
 type CustomButtonProps = {
   label: string;
@@ -37,6 +36,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 20,
-    fontFamily: 'Lato-Black', // Ensure Lato is loaded using expo-font
+    fontFamily: 'Lato-Bold', // Ensure Lato is loaded using expo-font
   },
 });

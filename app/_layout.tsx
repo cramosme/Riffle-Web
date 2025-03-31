@@ -7,6 +7,9 @@ import { useFonts } from 'expo-font'
 const RiffleLogo = require('@/assets/images/riffle_logo.png');
 
 export default function RootLayout() {
+
+   useFonts({'Lato-Bold': require('../assets/fonts/Lato-Bold.ttf')});
+
   return (
     <Stack
       screenOptions={{
@@ -27,7 +30,7 @@ export default function RootLayout() {
       <Stack.Screen name="stats" options={{ 
         title: 'Stats',
         headerRight: () => (
-          <Link href="/settings" style={{ marginRight: 40, fontFamily: 'sans', fontSize: 25, fontWeight: 'bold', color: 'white' }}>
+          <Link href="/settings" style={{ marginRight: 65, fontFamily: 'Lato-Bold', fontSize: 25, fontWeight: 'bold', color: 'white' }}>
             Settings
           </Link>
         ),
@@ -35,7 +38,7 @@ export default function RootLayout() {
       <Stack.Screen name="settings" options={{
          title: 'Settings',
          headerRight: () => (
-          <Link href="/stats" style={{ marginRight: 40, fontFamily: 'sans', fontSize: 25, fontWeight: 'bold', color: 'white' }}>
+          <Link href="/stats" style={{ marginRight: 65, fontFamily: 'Lato-Bold', fontSize: 25, fontWeight: 'bold', color: 'white' }}>
             Stats
           </Link>
          ), 

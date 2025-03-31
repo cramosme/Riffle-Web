@@ -15,7 +15,10 @@ export default function Callback() {
       const exchangeCodeForToken = async () => {
          if (!code) {
             console.error('Authorization code not found.');
-            router.replace('/');
+             // Delay navigation to allow Root Layout to mount
+            setTimeout(() => {
+               router.replace('/');
+            }, 0);
             return;
          }
 
@@ -23,7 +26,9 @@ export default function Callback() {
             const codeVerifier = await AsyncStorage.getItem('code_verifier');
             if (!codeVerifier) {
                console.error('Code verifier not found');
-               router.replace('/');
+               setTimeout(() => {
+                  router.replace('/');
+               }, 0);
                return;
             }
 
@@ -62,12 +67,16 @@ export default function Callback() {
 
             } else {
                console.error('Error getting access token:', data);
-               router.replace('/');
+               setTimeout(() => {
+                  router.replace('/');
+               }, 0);
                return;
             }
          } catch (error) {
             console.error('Error exchanging code for token:', error);
-            router.replace('/');
+            setTimeout(() => {
+               router.replace('/');
+            }, 0);
             return;
          }
       };
