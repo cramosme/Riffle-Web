@@ -6,7 +6,7 @@ const cors = require('cors');  // Allows frontend requests
 /* Database access */
 const { upsertUserProfile } = require('./db/userProfile');
 const { upsertTrack } = require('./db/trackInfo');
-const trackInteractions = require('./db/trackInteractions');
+const { upsertTrackInteractions } = require('./db/trackInteractions');
 const { initializeUserSettings, updateUserSettings } = require('./db/userSettings');
 
 const app = express();
@@ -21,7 +21,7 @@ const clientId = process.env.CLIENT_ID;
 const clientSecret = process.env.CLIENT_SECRET;
 const tokenEndpoint = 'https://accounts.spotify.com/api/token';
 
-/* Store token and upsert user */
+/* Store token and instantiate all user related data */
 app.post('/store-token', async (req, res) => {
    const {access_token, refresh_token, expires_in} = req.body;
    if(!access_token || !refresh_token || !expires_in){
@@ -36,11 +36,12 @@ app.post('/store-token', async (req, res) => {
 
    try{
 
+      /*---------------------------User Stuff Below---------------------------------------*/
       // Fetch the user's Spotify profile using the access token
       const profileResponse = await axios.get('https://api.spotify.com/v1/me', {
          headers: { Authorization: `Bearer ${accessToken}` }
       });
-      const profileData = profileResponse.data;
+      const profileData = profileResponse['data'];
 
       // Use the dedicated user profile function to upsert/fetch the user
       const { user, error: profileError } = await upsertUserProfile(profileData);
@@ -58,7 +59,19 @@ app.post('/store-token', async (req, res) => {
       console.log('User data fetched successfully:', user);
       console.log('Settings', settings);
 
-      // Return the user's Spotify ID so the frontend knows which user is active
+      /*---------------------------Track Stuff Below---------------------------------------*/
+      // Fetch the user's Top 50 tracks using the access token
+      const tracksResponse = await axios.get('https://api.spotify.com/v1/me/top/tracks?time_range=short_term&limit=50', {
+         headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      const topTracks = tracksResponse['data']['items'];
+
+      // This will work better than for loop bc it will combine all returns into one object, instead of just returning the last item inserted
+      const tracks = await Promise.all(topTracks.map(async (trackData) => upsertTrack(trackData)));
+
+      console.log(tracks);
+
+      // Return the user's Spotify ID so the frontend knows which user is active. Public info so safe to send to the front end.
       res.json({
          message: 'Token stored and user data fetched successfully',
          user_id: user['spotify_id'],

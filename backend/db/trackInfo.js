@@ -6,7 +6,7 @@ async function upsertTrack(trackData){
    const trackRecord = {
       track_id: trackData['id'],
       track_name: trackData['name'],
-      artists: Array.isArray(trackData['artists']) // checks to see if we have artists
+      artist: Array.isArray(trackData['artists']) // checks to see if we have artists
          ? trackData['artists'].map(artist => artist['name']).join(', ')
          : 'Unknown',  // Fallback if no artist data is present
       album_image: trackData['album'] && trackData['album']['images'] // checks to make sure album property exists and that the album has an image, if either is false sets album image to null

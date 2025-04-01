@@ -21,7 +21,7 @@ async function initializeUserSettings(userId){
       // Inser the user, only have to do id because DB gives default values
       const { data: insertedData, error: insertError } = await supabase
          .from('Settings')
-         .insert({userId: userId})
+         .insert({'user_id': userId})
          .single();
 
       if( insertError ){
@@ -29,6 +29,7 @@ async function initializeUserSettings(userId){
       }
       return { settings: insertedData }
    }
+
 }
 
 // This function is called if the user changes any of the values
