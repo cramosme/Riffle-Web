@@ -62,7 +62,10 @@ export default function Callback() {
                   await AsyncStorage.setItem('token_expiry', expiryTime.toString());
                }
 
-               await sendTokenToBackend(data.access_token, data.refresh_token || null, expiryTime);
+               const response = await sendTokenToBackend(data.access_token, data.refresh_token || null, expiryTime);
+               const userId = response['user_id'];
+               AsyncStorage.setItem('user_id', userId);
+
                router.replace('/stats');
 
             } else {
@@ -84,7 +87,7 @@ export default function Callback() {
       exchangeCodeForToken();
    }, [code, router]); // Run when `code` is available from the redirect
 
-   async function sendTokenToBackend( token:string, refreshToken: string | null, expiry:number | null ){
+   async function sendTokenToBackend( token, refreshToken, expiry ){
       try{
          const response = await fetch('http://localhost:3000/store-token',{
             method: 'POST',
@@ -97,10 +100,10 @@ export default function Callback() {
          });
          const data = await response.json();
          console.log('Backend response: ', data);
+         return data;
       }
       catch(error){
          console.error('Error sending token to backend:', error);
       }
    }
-
 }

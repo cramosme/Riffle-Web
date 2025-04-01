@@ -1,8 +1,13 @@
 require('dotenv').config({ path: '../.env' });
-const supabase = require('../lib/supabaseclient'); // Database access
 const express = require('express');  // Web server framework
 const axios = require('axios');  // Makes HTTP requests
 const cors = require('cors');  // Allows frontend requests
+
+/* Database access */
+const { upsertUserProfile } = require('./db/userProfile');
+const { upsertTrack } = require('./db/trackInfo');
+const trackInteractions = require('./db/trackInteractions');
+const userSettings = require('./db/userSettings');
 
 const app = express();
 app.use(cors());
@@ -37,48 +42,24 @@ app.post('/store-token', async (req, res) => {
       });
       const profileData = profileResponse.data;
 
-      // Prepare user record
-      const userRecord = {
-         spotify_id: profileData['id'],
-         display_name: profileData['display_name'],
-         profile_image: (profileData['images'] && profileData['images'].length > 0)
-            ? profileData['images'][0]['url']
-            : null
+      // Use the dedicated user profile function to upsert/fetch the user
+      const { user, error: profileError } = await upsertUserProfile(profileData);
+      if (profileError) {
+         console.error('Error upserting user:', profileError);
+         return res.status(500).json({ error: 'Error upserting user' });
       }
 
-      // Insert the user record. If the user already exists, do nothing
-      const { error: insertError } = await supabase
-         .from('User Profile')
-         .insert(userRecord, {returning: 'minimal'});
-
-
-      if( insertError ){
-         console.error('Insert error (likely conflict):', insertError.message);
-      }
-
-      // Fetch user's data from the database
-      const { data: userData, error: selectError } = await supabase
-         .from('User Profile')
-         .select('*')
-         .eq('spotify_id', profileData['id'])
-         .single();
-
-      if (selectError) {
-         console.error('Error fetching user data:', selectError);
-         return res.status(500).json({ error: 'Error fetching user data' });
-      }
-
-      console.log('User data fetched successfully:', userData);
+      console.log('User data fetched successfully:', user);
 
       // Return the user's Spotify ID so the frontend knows which user is active
       res.json({
          message: 'Token stored and user data fetched successfully',
-         user_id: userData.spotify_id,
-         user: userData,
+         user_id: user['spotify_id'],
+         user: user,
        });
 
    } catch( err ){
-      console.error('Error fetching user profile:', error.response?.data || error.message);
+      console.error('Error fetching user profile:', err.response?.data || err.message);
       res.status(500).json({ error: 'Failed to fetch user profile' });
    }
 });
