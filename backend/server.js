@@ -7,7 +7,7 @@ const cors = require('cors');  // Allows frontend requests
 const { upsertUserProfile } = require('./db/userProfile');
 const { upsertTrack } = require('./db/trackInfo');
 const trackInteractions = require('./db/trackInteractions');
-const userSettings = require('./db/userSettings');
+const { initializeUserSettings, updateUserSettings } = require('./db/userSettings');
 
 const app = express();
 app.use(cors());
@@ -49,7 +49,14 @@ app.post('/store-token', async (req, res) => {
          return res.status(500).json({ error: 'Error upserting user' });
       }
 
+      const { settings, error: settingsError } = await initializeUserSettings(profileData['id'])
+      if( settingsError ){
+         console.error('Error initializing settings:', settingsError);
+         return res.status(500).json({ error: 'Error initializing settings' })
+      }
+
       console.log('User data fetched successfully:', user);
+      console.log('Settings', settings);
 
       // Return the user's Spotify ID so the frontend knows which user is active
       res.json({

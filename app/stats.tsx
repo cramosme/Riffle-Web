@@ -5,6 +5,8 @@ export default function Stats () {
   const [profileData, setProfileData] = useState(null);
   const [artistData, setArtistData] = useState(null);
 
+   /* add call to refresh-token function */
+
 
   useEffect(() => {
     fetchUserData();
