@@ -6,7 +6,7 @@ const cors = require('cors');  // Allows frontend requests
 /* Database access */
 const { upsertUserProfile } = require('./db/userProfile');
 const { upsertTrack } = require('./db/trackInfo');
-const { upsertTrackInteractions } = require('./db/trackInteractions');
+const { upsertTrackInteractions, resetPreviousTopTracks } = require('./db/trackInteractions');
 const { initializeUserSettings, updateUserSettings } = require('./db/userSettings');
 
 const app = express();
@@ -66,10 +66,25 @@ app.post('/store-token', async (req, res) => {
       });
       const topTracks = tracksResponse['data']['items'];
 
-      // This will work better than for loop bc it will combine all returns into one object, instead of just returning the last item inserted
-      const tracks = await Promise.all(topTracks.map(async (trackData) => upsertTrack(trackData)));
+      // First reset previous track rankings from previous login to get new up-to-date rankings
+      const { error: resetError } = await resetPreviousTopTracks(user['spotify_id']);
+      if( resetError ){
+         console.error('Error resetting track rankings:', resetError);
+      }
 
-      console.log(tracks);
+      // This will work better than for loop bc it will combine all returns into one object, instead of just returning the last item inserted
+      const result = await Promise.all(
+         topTracks.map(async (trackData, index) => {
+            const tracks = await upsertTrack(trackData);
+            const interactions = await upsertTrackInteractions(user['spotify_id'], trackData['id'], index + 1);
+            return { tracks, interactions };
+         })
+      );
+
+      const trackResults = result.map(result => result.tracks);
+      const interResults = result.map(result => result.interactions);
+      console.log('Track Results:', trackResults);
+      console.log('Interaction Results:', interResults);
 
       // Return the user's Spotify ID so the frontend knows which user is active. Public info so safe to send to the front end.
       res.json({
