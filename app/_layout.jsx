@@ -1,7 +1,7 @@
 import { Link, Stack } from 'expo-router';
 import { Image, View, Text, StyleSheet } from 'react-native';
 import SpotifyAuthWithPKCE from '@/app/components/SpotifyAuthWithPKCE';
-import { useFonts } from 'expo-font'
+import { useFonts } from 'expo-font';
 
 
 const RiffleLogo = require('@/assets/images/riffle_logo.png');

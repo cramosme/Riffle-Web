@@ -13,5 +13,5 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-, "app/callback.js"  ]
+, "app/callback.js", "app/settings.jsx", "app/stats.jsx", "app/not-found.jsx", "app/_layout.jsx", "app/index.jsx", "app/components/Button.jsx"  ]
 }

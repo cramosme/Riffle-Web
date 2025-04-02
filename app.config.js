@@ -31,7 +31,7 @@ module.exports = {
        [
          'expo-splash-screen',
          {
-           image: './assets/images/splash-icon.png',
+           image: './assets/images/riffle_logo.png',
            imageWidth: 200,
            resizeMode: 'contain',
            backgroundColor: '#ffffff',

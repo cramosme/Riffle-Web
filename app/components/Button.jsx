@@ -1,12 +1,7 @@
 import React from 'react';
 import { Pressable, Text, StyleSheet, GestureResponderEvent } from 'react-native';
 
-type CustomButtonProps = {
-  label: string;
-  onPress: (event: GestureResponderEvent) => void;
-};
-
-export default function CustomButton({ label, onPress }: CustomButtonProps) {
+export default function CustomButton({ label, onPress }) {
   return (
     <Pressable
       onPress={onPress}
