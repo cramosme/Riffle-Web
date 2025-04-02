@@ -60,21 +60,27 @@ export default function Stats () {
                               #{index + 1} Song: {track['name']}
                            </Text>
                            <Text style={{ fontSize: 20, paddingVertical: 10, color: 'white' }}>
+                              Artist(s): {track['artists'][0]['name']}
+                              {track['artists'].slice(1, track['artists'].length).map((artists, artistIndex) => (
+                                 <View key={artistIndex}>
+                                    <Text style={{ fontSize: 20, color: 'white' }}>
+                                       , {artists['name']} 
+                                    </Text>
+                                 </View>
+                              ))}
+                           </Text>
+                           <Text style={{ fontSize: 20, paddingVertical: 10, color: 'white' }}>
                               Album: {track['album']['name']}
                            </Text>
-                           {track['album']['artists'].slice(0, 3).map((artists, artistIndex) => (
-                              <View key={artistIndex} style={styles.artistContainer}>
-                                 <Text style={{ fontSize: 20, paddingVertical: 10, color: 'white' }}>
-                                    Artist: {artists['name']}
-                                 </Text>
-                              </View>
-                           ))}
+                           <Text style={{ fontSize: 20, paddingVertical: 10, color: 'white' }}>
+                              Release Date: {track['album']['release_date']}
+                           </Text>
                         </View>
                   ))}
                </View>
                   {/* <Text>{JSON.stringify(profileData, null, 2)}</Text>
-                  <Text>{JSON.stringify(artistData, null, 2)}</Text> */}
-                  <Text style={{ color: 'white'}}>{JSON.stringify(trackData, null, 2)}</Text>
+                  <Text>{JSON.stringify(artistData, null, 2)}</Text>
+                  <Text style={{ color: 'white'}}>{JSON.stringify(trackData, null, 2)}</Text> */}
                </View>
             )}
          </View>
