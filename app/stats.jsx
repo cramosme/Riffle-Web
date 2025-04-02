@@ -52,6 +52,7 @@ export default function Stats () {
                   
                   ))}
                </View>
+               <Text style={{ fontSize: 20, paddingVertical: 20, color: 'white' }}>Top 5 Songs: </Text>
                <View style={styles.tracks}>
                   {trackData['items'].slice(0, 5).map((track, index) => (
                         <View key={index} style={styles.trackContainer}>
@@ -98,20 +99,27 @@ const styles = StyleSheet.create({
       backgroundColor: '#25292e',
    },
    artists: {
+      borderWidth: 5,
+      borderRadius: 10,
+      borderColor: '#0eaa45',
       flexWrap: 'wrap',
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
       padding: 20,
-      backgroundColor: '#25292e',
+      backgroundColor: '#1a1a1a',
    },
    tracks: {
+      borderWidth: 5,
+      borderRadius: 10,
+      borderColor: '#0eaa45',
       flexWrap: 'wrap',
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
       padding: 20,
-      backgroundColor: '#25292e',
+      marginTop: 20,
+      backgroundColor: '#1a1a1a',
    },
    artistContainer: {
       justifyContent: 'center',

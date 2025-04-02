@@ -15,7 +15,7 @@ export default function RootLayout() {
       screenOptions={{
         headerLeft: () => null,
         headerStyle: {
-          backgroundColor: '#1b1811',
+          backgroundColor: '#1a1a1a',
         },
         headerTransparent: true,
         headerTitle: () => (
