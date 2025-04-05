@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import CustomButton from "./Button";
+import Button from "./Button";
 
 // Helper function to generate a random string for code_verifier
 function generateRandomString(length) {
@@ -96,6 +96,6 @@ export default function SpotifyAuthWithPKCE() {
    };
 
    return(
-      <CustomButton label="Login" onClick={handleLogin}/>
+      <Button label="Login" onClick={handleLogin}/>
    );
 }
