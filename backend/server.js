@@ -1,4 +1,4 @@
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config();
 const express = require('express');  // Web server framework
 const axios = require('axios');  // Makes HTTP requests
 const cors = require('cors');  // Allows frontend requests
@@ -17,7 +17,7 @@ let accessToken = null;
 let refreshToken = null;
 let tokenExpiry = null;
 
-const clientId = process.env.CLIENT_ID;
+const clientId = process.env.NEXT_PUBLIC_CLIENT_ID;
 const clientSecret = process.env.CLIENT_SECRET;
 const tokenEndpoint = 'https://accounts.spotify.com/api/token';
 
@@ -34,9 +34,13 @@ app.post('/store-token', async (req, res) => {
    tokenExpiry = expires_in;
    console.log('Token stored successfully');
 
-   try{
+   // This allows the client to continue without waiting for data processing
+   res.json({
+      message: 'Token stored successfully',
+      status: 'processing'
+   });
 
-      /*---------------------------User Stuff Below---------------------------------------*/
+   try {
       // Fetch the user's Spotify profile using the access token
       const profileResponse = await axios.get('https://api.spotify.com/v1/me', {
          headers: { Authorization: `Bearer ${accessToken}` }
@@ -47,57 +51,63 @@ app.post('/store-token', async (req, res) => {
       const { user, error: profileError } = await upsertUserProfile(profileData);
       if (profileError) {
          console.error('Error upserting user:', profileError);
-         return res.status(500).json({ error: 'Error upserting user' });
+         return;
       }
 
       const { settings, error: settingsError } = await initializeUserSettings(profileData['id'])
-      if( settingsError ){
+      if (settingsError) {
          console.error('Error initializing settings:', settingsError);
-         return res.status(500).json({ error: 'Error initializing settings' })
+         return;
       }
 
       console.log('User data fetched successfully:', user);
       console.log('Settings', settings);
 
-      /*---------------------------Track Stuff Below---------------------------------------*/
+      // Process tracks in the background
+      processUserTracks(user['spotify_id'], accessToken);
+
+   } catch (err) {
+      console.error('Error processing user data:', err.response?.data || err.message);
+   }
+});
+
+// Separate function to process tracks in the background
+async function processUserTracks(userId, accessToken) {
+   try {
       // Fetch the user's Top 50 tracks using the access token
       const tracksResponse = await axios.get('https://api.spotify.com/v1/me/top/tracks?time_range=short_term&limit=50', {
          headers: { Authorization: `Bearer ${accessToken}` }
       });
       const topTracks = tracksResponse['data']['items'];
 
-      // First reset previous track rankings from previous login to get new up-to-date rankings
-      const { error: resetError } = await resetPreviousTopTracks(user['spotify_id']);
-      if( resetError ){
+      // Reset previous track rankings from previous login to get new up-to-date rankings
+      const { error: resetError } = await resetPreviousTopTracks(userId);
+      if (resetError) {
          console.error('Error resetting track rankings:', resetError);
       }
 
-      // This will work better than for loop bc it will combine all returns into one object, instead of just returning the last item inserted
-      const result = await Promise.all(
-         topTracks.map(async (trackData, index) => {
-            const tracks = await upsertTrack(trackData);
-            const interactions = await upsertTrackInteractions(user['spotify_id'], trackData['id'], index + 1);
-            return { tracks, interactions };
-         })
-      );
-
-      const trackResults = result.map(result => result.tracks);
-      const interResults = result.map(result => result.interactions);
-      console.log('Track Results:', trackResults);
-      console.log('Interaction Results:', interResults);
-
-      // Return the user's Spotify ID so the frontend knows which user is active. Public info so safe to send to the front end.
-      res.json({
-         message: 'Token stored and user data fetched successfully',
-         user_id: user['spotify_id'],
-         user: user,
-       });
-
-   } catch( err ){
-      console.error('Error fetching user profile:', err.response?.data || err.message);
-      res.status(500).json({ error: 'Failed to fetch user profile' });
+      // Process tracks in batches instead of all at once, helps manage database load
+      const batchSize = 10;
+      for (let i = 0; i < topTracks.length; i += batchSize) {
+         const batch = topTracks.slice(i, i + batchSize);
+         
+         await Promise.all(
+            batch.map(async (trackData, batchIndex) => {
+               const index = i + batchIndex;
+               const tracks = await upsertTrack(trackData);
+               const interactions = await upsertTrackInteractions(userId, trackData['id'], index + 1);
+               return { tracks, interactions };
+            })
+         );
+         
+         console.log(`Processed tracks ${i + 1} to ${Math.min(i + batchSize, topTracks.length)}`);
+      }
+      
+      console.log('All tracks processed successfully.');
+   } catch (error) {
+      console.error('Error processing tracks:', error);
    }
-});
+}
 
 app.post('/refresh-token', async(req, res) => {
    

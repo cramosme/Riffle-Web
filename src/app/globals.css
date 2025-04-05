@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Reset styles to remove default margins and paddings */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* Define the custom font */
+@font-face {
+   font-family: 'Lato-Bold';
+   src: url('/fonts/Lato-Bold.ttf') format('truetype');
+   font-weight: 700;
+   font-style: normal;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --font-sans: 'Lato-Bold', Arial, Helvetica, sans-serif;
+}
+
+.light {
+   --background: #ffffff;
+   --foreground: #171717;
+}
+
+.dark {
+   --background: #25292e;
+   --foreground: #ededed;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #25292e;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}

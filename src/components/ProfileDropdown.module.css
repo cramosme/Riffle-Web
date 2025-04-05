@@ -1,0 +1,51 @@
+/* Styles for the profile drop down menu */
+
+.container {
+   position: relative;
+   display: inline-block;
+}
+ 
+.profileButton {
+   background: none;
+   border: none;
+   cursor: pointer;
+   padding: 0;
+}
+ 
+.profileImage {
+   margin-top: 5px;
+   margin-right: 30px;
+   border-radius: 50%;
+   object-fit: cover;
+   transition: opacity 0.2s;
+}
+ 
+.profileImage:hover {
+   opacity: 0.8;
+}
+ 
+.dropdown {
+   position: absolute;
+   top: 50px;
+   right: 0;
+   background-color: #1a1a1a;
+   border: 1px solid #333;
+   border-radius: 5px;
+   min-width: 120px;
+   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+   z-index: 10;
+   overflow: hidden;
+}
+ 
+.dropdownItem {
+   display: block;
+   padding: 12px 16px;
+   color: white;
+   text-decoration: none;
+   font-family: 'Lato-Bold', sans-serif;
+   transition: background-color 0.2s;
+}
+ 
+.dropdownItem:hover {
+   background-color: #0eaa45;
+}
