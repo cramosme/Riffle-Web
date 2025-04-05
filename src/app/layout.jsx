@@ -4,61 +4,77 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import SpotifyAuthWithPKCE from '@/components/SpotifyAuthWithPKCE';
+import styles from './layout.module.css';
+import { isUserLoggedIn, getLoggedInUserId } from '@/utils/auth';
+import ProfileDropdown from '@/components/ProfileDropdown';
 import './globals.css';
+import { useEffect, useState } from 'react';
 
 export default function RootLayout({ children }) {
+
   const pathname = usePathname();
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userId, setUserId] = useState(null);
+  const [profileImage, setProfileImage] = useState(null);
   
   // Helper to check if we're on a specific route type
   const isStatsRoute = pathname?.includes('/stats/');
   const isSettingsRoute = pathname?.includes('/settings/');
   const isIndexRoute = pathname === '/';
 
+   useEffect(() => {
+      const loggedIn = isUserLoggedIn();
+      setIsLoggedIn(loggedIn);
+
+      if( isLoggedIn ){
+         setUserId(getLoggedInUserId);
+         const profileImageUrl = localStorage.getItem('profile_pic');
+         if( profileImageUrl ){
+            setProfileImage(profileImageUrl);
+         }
+      }
+
+      setAuthChecked(true);
+   }, [pathname]);
+
   return (
-    <html lang="en">
+    <html lang="en" className={styles.html}>
       <head>
         <title>Riffle</title>
+        <meta httpEquiv="Content-Language" content="en" />
+        <meta name="google" content="notranslate" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
-      <body>
-        <header style={{
-          backgroundColor: '#1a1a1a',
-          alignItems: 'center',
-          flexDirection: 'row',
-        }}>
-          {/* Logo and title on the left */}
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <Image 
-              src="/images/riffle_logo.png" 
-              alt="Riffle Logo" 
-              width={50} 
-              height={50}
-              style={{ marginLeft: '40px' }}
-            />
-            <span style={{ 
-              padding: '0 10px', 
-              fontSize: '25px', 
-              fontWeight: 'bold', 
-              color: 'white', 
-              fontFamily: 'Lato-Bold',
-            }}>
-              Riffle
-            </span>
-          </div>
+      <body className={styles.body}>
+        <header className={styles.header}>
+            {/* Logo and title on the left */}
+            <Link href="/" className={styles.logoContainer}>
+                  <Image 
+                     src="/images/riffle_logo.png" 
+                     alt="Riffle Logo" 
+                     width={50} 
+                     height={50}
+                     className={styles.logoImage}
+                  />
+                  <span className={styles.logoText}>
+                     Riffle
+                  </span>
+            </Link>
           
           {/* Navigation links or auth button on the right */}
-          <div style={{ marginRight: '65px' }}>
-            {isIndexRoute && <SpotifyAuthWithPKCE />}
+          <div className={styles.navContainer}>
+            {isIndexRoute && authChecked && ( isLoggedIn ? (
+               <ProfileDropdown userId={userId} profileImageUrl={profileImage} />
+            ) : (
+               <SpotifyAuthWithPKCE/>
+            )
+            )}
             
             {isStatsRoute && (
               <Link 
                 href={pathname?.replace('/stats/', '/settings/')} 
-                style={{ 
-                  fontSize: '25px', 
-                  fontWeight: 'bold', 
-                  color: 'white', 
-                  fontFamily: 'Lato-Bold, Arial, sans-serif',
-                  textDecoration: 'none'
-                }}
+                className={styles.navLink}
               >
                 Settings
               </Link>
@@ -67,13 +83,7 @@ export default function RootLayout({ children }) {
             {isSettingsRoute && (
               <Link 
                 href={pathname?.replace('/settings/', '/stats/')} 
-                style={{ 
-                  fontSize: '25px', 
-                  fontWeight: 'bold', 
-                  color: 'white', 
-                  fontFamily: 'Lato-Bold, Arial, sans-serif',
-                  textDecoration: 'none'
-                }}
+                className={styles.navLink}
               >
                 Stats
               </Link>
@@ -81,7 +91,7 @@ export default function RootLayout({ children }) {
           </div>
         </header>
         
-        <main style={{ minHeight: '100vh', paddingTop: '16px' }}>
+        <main className={styles.main}>
           {children}
         </main>
       </body>

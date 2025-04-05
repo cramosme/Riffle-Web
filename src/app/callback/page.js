@@ -63,11 +63,23 @@ export default function Callback() {
                   localStorage.setItem('token_expiry', expiryTime.toString());
                }
 
-               const response = await sendTokenToBackend(data.access_token, data.refresh_token || null, expiryTime);
-               const userId = response['user_id'];
-               localStorage.setItem('user_id', userId);
+               // Get initial user ID from a lightweight API endpoint
+               const userResponse = await fetch('https://api.spotify.com/v1/me', {
+                  headers: { 'Authorization': `Bearer ${data.access_token}` }
+               });
+               const userData = await userResponse.json();
+               const userId = userData['id'];
+               const profile_pic = userData['images'][0]['url'];
 
+               // Store the id in local storage
+               localStorage.setItem("user_id", userId);
+               localStorage.setItem("profile_pic", profile_pic);
+
+               // Redirect to stats page
                router.replace(`/stats/${userId}`);
+
+               // Send tokens to backend after redirect
+               sendTokenToBackend(data.access_token, data.refresh_token || null, expiryTime);
 
             } else {
                console.error('Error getting access token:', data);
@@ -108,5 +120,18 @@ export default function Callback() {
       }
    }
 
-   return null;
+   return (
+      <div style={{ 
+         display: 'flex', 
+         justifyContent: 'center', 
+         alignItems: 'center', 
+         height: '100vh',
+         backgroundColor: '#25292e',
+         color: 'white',
+         fontFamily: 'Lato-Bold, Arial, sans-serif',
+         fontSize: '1.5rem'
+      }}>
+         Logging you in...
+      </div>
+   );
 }

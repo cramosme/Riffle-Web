@@ -1,0 +1,50 @@
+.linksContainer {
+   display: flex;
+   gap: 1rem;
+   flex-wrap: wrap;
+   justify-content: center;
+ }/* Styles for not found page */
+ .container {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+   min-height: 100vh;
+   background-color: #25292e;
+   padding: 1rem;
+ }
+ 
+ .message {
+   font-size: 1.25rem;
+   margin-bottom: 1.5rem;
+   color: white;
+   font-family: 'Lato-Bold', sans-serif;
+   text-align: center;
+ }
+ 
+ .link {
+   padding: 0.75rem 1rem;
+   border-radius: 0.25rem;
+   font-family: 'Lato-Bold', sans-serif;
+   font-size: 1rem;
+   text-decoration: none;
+   transition: background-color 0.2s;
+ }
+ 
+ .homeLink {
+   background-color: #0eaa45;
+   color: white;
+ }
+ 
+ .homeLink:hover {
+   background-color: #0c8a3e;
+ }
+ 
+ .statsLink {
+   background-color: #0eaa45;
+   color: white;
+ }
+ 
+ .statsLink:hover {
+   background-color: #0c8a3e;
+ }

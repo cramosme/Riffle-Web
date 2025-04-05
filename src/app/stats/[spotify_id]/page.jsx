@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import styles from './page.module.css';
 
 export default function Stats({ params }) {
   const [profileData, setProfileData] = useState(null);
@@ -47,11 +48,11 @@ export default function Stats({ params }) {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center bg-[#25292e] p-5 min-h-screen overflow-y-auto">
-      <div className="flex flex-col items-center justify-center p-5 bg-[#25292e] w-full max-w-6xl">
+    <div className={styles.container}>
+      <div className={styles.contentWrapper}>
         {/* Insert web playback here */}
         {profileData && artistData && trackData && (
-          <div className="flex flex-col items-center justify-center">
+          <div className={styles.contentWrapper}>
             {profileData['images'] && profileData['images'][0] && (
               <Image 
                 src={profileData['images'][0]['url']} 
@@ -61,17 +62,17 @@ export default function Stats({ params }) {
               />
             )}
             
-            <p className="text-xl py-5 text-white font-['Lato-Bold']">
+            <p className={styles.displayName}>
               {profileData['display_name']}
             </p>
             
-            <p className="text-3xl py-5 text-white font-['Lato-Bold']">
+            <p className={styles.sectionTitle}>
               Top 5 Artists:
             </p>
             
-            <div className="flex flex-wrap justify-center items-center p-5 bg-[#1a1a1a] border-[5px] border-[#0eaa45] rounded-[10px]">
+            <div className={styles.cardContainer}>
               {artistData.items.slice(0, 5).map((artist, index) => (
-                <div key={index} className="flex flex-col justify-center items-center mb-5 px-5">
+                <div key={index} className={styles.cardItem}>
                   {artist['images'] && artist['images'][2] && (
                     <Image 
                       src={artist['images'][2]['url']} 
@@ -81,24 +82,24 @@ export default function Stats({ params }) {
                     />
                   )}
                   
-                  <p className="text-xl py-2.5 text-white font-['Lato-Bold']">
+                  <p className={styles.cardTitle}>
                     {index + 1}: {artist['name']}
                   </p>
                   
-                  <p className="text-xl text-white font-['Lato-Bold']">
+                  <p className={styles.cardSubtitle}>
                     Followers: {formatNumberWithCommas(artist.followers.total)}
                   </p>
                 </div>
               ))}
             </div>
             
-            <p className="text-3xl py-5 text-white font-['Lato-Bold']">
+            <p className={styles.sectionTitle}>
               Top 5 Songs:
             </p>
             
-            <div className="flex flex-wrap justify-center items-center p-5 mt-2.5 bg-[#1a1a1a] border-[5px] border-[#0eaa45] rounded-[10px]">
+            <div className={styles.cardContainer}>
               {trackData.items.slice(0, 5).map((track, index) => (
-                <div key={index} className="flex flex-col justify-center items-center mb-5 px-5">
+                <div key={index} className={styles.cardItem}>
                   {track['album']['images'] && track['album']['images'][1] && (
                     <Image 
                       src={track['album']['images'][1]['url']} 
@@ -108,24 +109,24 @@ export default function Stats({ params }) {
                     />
                   )}
                   
-                  <p className="text-xl py-2.5 text-white font-['Lato-Bold']">
+                  <p className={styles.cardTitle}>
                     {index + 1}: {track['name']}
                   </p>
                   
-                  <p className="text-xl py-2.5 text-white font-['Lato-Bold']">
+                  <p className={styles.cardSubtitle}>
                     Artist(s):
-                    <span className="text-xl text-white font-['Lato-Bold']">
+                    <span>
                       {' '}{track['artists'][0]['name']}
                     </span>
                     
                     {track.artists.slice(1, track.artists.length).map((artist, artistIndex) => (
-                      <span key={artistIndex} className="text-xl text-white font-['Lato-Bold']">
+                      <span key={artistIndex}>
                         , {artist['name']}
                       </span>
                     ))}
                   </p>
                   
-                  <p className="text-xl py-2.5 text-white font-['Lato-Bold']">
+                  <p className={styles.cardDetail}>
                     Release Date: {track['album']['release_date']}
                   </p>
                 </div>
