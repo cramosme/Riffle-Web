@@ -45,6 +45,7 @@ export default function RootLayout({ children }) {
         <meta httpEquiv="Content-Language" content="en" />
         <meta name="google" content="notranslate" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" href="/images/riffle_logo.png" />
       </head>
       <body className={styles.body}>
         <header className={styles.header}>
