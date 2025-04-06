@@ -9,18 +9,6 @@ export default function Stats({ params }) {
   const [artistData, setArtistData] = useState(null);
   const [trackData, setTrackData] = useState(null);
 
-  /* function to get access token */
-  async function getAccessToken() {
-    try {
-      const token = localStorage.getItem('access_token');
-      return token;
-    } catch (err) {
-      return null;
-    }
-  }
-
-  const token = getAccessToken();
-
   const formatNumberWithCommas = (number) => {
     return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
@@ -31,9 +19,34 @@ export default function Stats({ params }) {
 
   async function fetchUserData() {
     try {
-      const profileResponse = await fetch('http://localhost:3000/me');
-      const artistResponse = await fetch('http://localhost:3000/me/top/artists');
-      const trackResponse = await fetch('http://localhost:3000/me/top/tracks');
+
+      const cachedData = localStorage.getItem('spotify_data');
+      const cachedTimeStamp = localStorage.getItem('spotify_data_timestamp');
+
+      const isCacheValid = cachedData && cachedTimeStamp && (Date.now() - parseInt(cachedTimeStamp) < 60 * 60 * 1000); // checks if values are null and checks if time is less than 1 hours
+
+      if( isCacheValid ){
+         const parsedData = JSON.parse(cachedData);
+         setProfileData(parsedData["profile"]);
+         setArtistData(parsedData["artists"]);
+         setTrackData(parsedData["tracks"]);
+         console.log("Using cached spotify data");
+         return;
+      }
+
+      // No valid cache so fetch new data
+      const userId = localStorage.getItem("user_id");
+      const token = localStorage.getItem("access_token");
+
+      const requestOptions = {
+         headers: {
+            'Authorization': `Bearer ${token}`
+         }
+      };
+
+      const profileResponse = await fetch('http://localhost:3000/me', requestOptions);
+      const artistResponse = await fetch('http://localhost:3000/me/top/artists', requestOptions);
+      const trackResponse = await fetch('http://localhost:3000/me/top/tracks', requestOptions);
       
       const profileData = await profileResponse.json();
       const artistData = await artistResponse.json();
@@ -42,6 +55,18 @@ export default function Stats({ params }) {
       setProfileData(profileData);
       setArtistData(artistData);
       setTrackData(trackData);
+
+      // Cache the data for later use
+      const dataToCache = {
+         profile: profileData,
+         artists: artistData,
+         tracks: trackData,
+      };
+
+      localStorage.setItem('spotify_data', JSON.stringify(dataToCache));
+      localStorage.setItem("spotify_data_timestamp", Date.now().toString());
+      console.log("Fetched and cached new spotify data");
+
     } catch (error) {
       console.error('Error fetching user data', error);
     }

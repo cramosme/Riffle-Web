@@ -13,10 +13,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-let accessToken = null;
-let refreshToken = null;
-let tokenExpiry = null;
-
 const clientId = process.env.NEXT_PUBLIC_CLIENT_ID;
 const clientSecret = process.env.CLIENT_SECRET;
 const tokenEndpoint = 'https://accounts.spotify.com/api/token';
@@ -27,12 +23,6 @@ app.post('/store-token', async (req, res) => {
    if(!access_token || !refresh_token || !expires_in){
       return res.status(400).json({error: 'Token, refresh token, or expiration time missing'});
    }
-
-   // Stores tokens in memory
-   accessToken = access_token;
-   refreshToken = refresh_token;
-   tokenExpiry = expires_in;
-   console.log('Token stored successfully');
 
    // This allows the client to continue without waiting for data processing
    res.json({
@@ -111,6 +101,8 @@ async function processUserTracks(userId, accessToken) {
 
 app.post('/refresh-token', async(req, res) => {
    
+   const refreshToken = req.body.refresh_token;
+
    if(!refreshToken){
       return res.status(401).json({error: 'No refresh token available'});
    }
@@ -124,12 +116,10 @@ app.post('/refresh-token', async(req, res) => {
       }));
 
       const { access_token, expires_in } = response.data;
-
-      accessToken = access_token;
-      tokenExpiry = Date.now() + (expires_in*1000);
+      const tokenExpiry = Date.now() + (expires_in*1000);
 
       res.json({
-         access_token: accessToken,
+         access_token: access_token,
          expires_in: tokenExpiry,
       });
    }
@@ -141,14 +131,25 @@ app.post('/refresh-token', async(req, res) => {
 
 /* Test API Call */
 app.get('/me', async (req,res) => {
-   if(!accessToken){
+
+   const token = req.headers.authorization?.split(' ')[1];
+
+   if(!token){
       return res.status(401).json({error: 'No access token available'});
    }
 
+
    try{
       const response = await axios.get('https://api.spotify.com/v1/me', {
-         headers: { Authorization: `Bearer ${accessToken}`}
+         headers: { Authorization: `Bearer ${token}`}
       });
+      const userId = response["data"]["id"];
+
+      // Have to call this here since user might not always login, this takes care of users who are still logged in from previous session
+      processUserTracks(userId, token).catch(err => {
+         console.error("Error processing tracks:", err);
+      })
+
       res.json(response.data);
    }
    catch(error){
@@ -159,13 +160,17 @@ app.get('/me', async (req,res) => {
 
 /* GetUsersTopArtists */
 app.get('/me/top/artists', async (req,res) => {
-   if(!accessToken){
+
+   const token = req.headers.authorization?.split(' ')[1];
+
+
+   if(!token){
       return res.status(401).json({error: 'No access token available'});
    }
 
    try{
       const response = await axios.get('https://api.spotify.com/v1/me/top/artists?limit=5', {
-         headers: { Authorization: `Bearer ${accessToken}`}
+         headers: { Authorization: `Bearer ${token}`}
       });
       res.json(response.data);
    }
@@ -177,13 +182,17 @@ app.get('/me/top/artists', async (req,res) => {
 
 /* get top tracks */
 app.get('/me/top/tracks', async (req,res) => {
-   if(!accessToken){
+
+   const token = req.headers.authorization?.split(' ')[1];
+
+
+   if(!token){
       return res.status(401).json({error: 'No access token available'});
    }
 
    try{
       const response = await axios.get('https://api.spotify.com/v1/me/top/tracks?limit=5', {
-         headers: { Authorization: `Bearer ${accessToken}`}
+         headers: { Authorization: `Bearer ${token}`}
       });
       res.json(response.data);
    }
@@ -192,6 +201,9 @@ app.get('/me/top/tracks', async (req,res) => {
       res.status(500).json({ error: 'Failed to fetch user data' });
    }
 });
+
+app.post
+
 
 const PORT = 3000;
 app.listen(PORT, () => {

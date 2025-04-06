@@ -12,8 +12,16 @@ export function isUserLoggedIn() {
      const userId = localStorage.getItem('user_id');
      const tokenExpiry = localStorage.getItem('token_expiry');
      
+     console.log('Auth check values:', { 
+      hasAccessToken: !!accessToken, 
+      hasUserId: !!userId,
+      tokenExpiry: tokenExpiry ? new Date(parseInt(tokenExpiry)).toISOString() : null,
+      currentTime: new Date().toISOString()
+    });
+
      // Check if all required values exist
      if (!accessToken || !userId) {
+      console.log('Missing required auth values');
        return false;
      }
      
@@ -21,6 +29,7 @@ export function isUserLoggedIn() {
      if (tokenExpiry) {
        const expiryTime = parseInt(tokenExpiry);
        if (Date.now() > expiryTime) {
+         console.log('Token is expired');
          return false; // Token is expired
        }
      }
@@ -36,14 +45,15 @@ export function isUserLoggedIn() {
   Get the user ID if the user is logged in
 */
 export function getLoggedInUserId() {
-   if (!isUserLoggedIn()) {
-     return null;
+
+   if (typeof window === 'undefined' || !isUserLoggedIn()) {
+      return null;
    }
-   
+
    try {
-     return localStorage.getItem('user_id');
+      return localStorage.getItem('user_id');
    } catch (error) {
-     console.error('Error getting user ID:', error);
-     return null;
+      console.error('Error getting user ID:', error);
+      return null;
    }
 }
