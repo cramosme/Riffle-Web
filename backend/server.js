@@ -34,7 +34,7 @@ app.post('/store-token', async (req, res) => {
    try {
       // Fetch the user's Spotify profile using the access token
       const profileResponse = await axios.get('https://api.spotify.com/v1/me', {
-         headers: { Authorization: `Bearer ${accessToken}` }
+         headers: { Authorization: `Bearer ${access_token}` }
       });
       const profileData = profileResponse['data'];
 
@@ -55,7 +55,7 @@ app.post('/store-token', async (req, res) => {
       console.log('Settings', settings);
 
       // Process tracks in the background
-      processUserTracks(user['spotify_id'], accessToken);
+      processUserTracks(user['spotify_id'], access_token);
 
    } catch (err) {
       console.error('Error processing user data:', err.response?.data || err.message);
