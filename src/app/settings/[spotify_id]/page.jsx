@@ -1,12 +1,32 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "./page.module.css";
 import Button from "@/components/Button";
 import buttonStyles from "@/components/Button.module.css";
 
-export default function MySlider() {
-   const [sliderValue, setSliderValue] = useState(0);
+export default function Settings() {
+   const [skipThreshold, setSkipThreshold] = useState(20);
+
+   // Fetch current settings
+   useEffect(() => {
+      const fetchSettings = async () => {
+         try{
+            const userId = localStorage.getItem("user_id");
+            const response = await fetch(`http://localhost:3000/settings/${userId}`);
+
+            if( response.ok ){
+               const data = await response.json();
+               setSkipThreshold(data["settings"]["skip_threshold"]);
+            }
+         } catch(error){
+            console.error("Error fetching settings:", error);
+         }
+      };
+
+      fetchSettings();
+   }, []);
+
 
    // Logout function, pretty straightforward just clear out the stored info and redirect to homepage
    const handleLogout = () => {
@@ -43,15 +63,19 @@ export default function MySlider() {
 
    return (
       <div className={styles.container}>
-         <input
-            type="range"
-            min="0"
-            max="100"
-            value={sliderValue}
-            className={styles.slider}
-            onChange={(e) => setSliderValue(parseFloat(e.target.value))}
-         />
-         <p className={styles.sliderValue}>Value: {sliderValue.toFixed(0)}</p>
+         
+         {/* Skip threshold stuff */}
+         <div>
+            <label htmlFor="skipThreshold">Skip Threshold: </label>
+            <input
+               type="number"
+               id="skipThreshold"
+               value={skipThreshold}
+               min="1"
+               max="100"
+            />
+         </div>
+         
 
          {/* Add buttons */}
          <div className={buttonStyles.buttonsContainer}>

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import styles from './page.module.css';
 
-export default function Stats({ params }) {
+export default function Stats() {
   const [profileData, setProfileData] = useState(null);
   const [artistData, setArtistData] = useState(null);
   const [trackData, setTrackData] = useState(null);
