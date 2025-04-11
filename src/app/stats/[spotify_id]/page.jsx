@@ -3,17 +3,22 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import styles from './page.module.css';
+import WebPlayback from '@/components/WebPlayback';
 
 export default function Stats() {
   const [profileData, setProfileData] = useState(null);
   const [artistData, setArtistData] = useState(null);
   const [trackData, setTrackData] = useState(null);
+  const [token, setToken] = useState(null);
 
   const formatNumberWithCommas = (number) => {
     return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
 
   useEffect(() => {
+
+    const accessToken = localStorage.getItem("access_token");
+    setToken(accessToken);
     fetchUserData();
   }, []);
 
@@ -76,6 +81,7 @@ export default function Stats() {
     <div className={styles.container}>
       <div className={styles.contentWrapper}>
         {/* Insert web playback here */}
+        {token && <WebPlayback token={token}/>}
         {profileData && artistData && trackData && (
           <div className={styles.contentWrapper}>
             {profileData['images'] && profileData['images'][0] && (
