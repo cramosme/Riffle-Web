@@ -197,45 +197,34 @@ function WebPlayback(props) {
 
     // Show loading state when not ready
     if (!isReady || !player) {
-        return (
-            <div className="container">
-                <div className="main-wrapper">
-                    <p>Connecting to Spotify...</p>
-                </div>
-            </div>
-        );
+        return;
     }
 
     // Not active state
     if (!is_active) {
         return (
-            <div className={styles.container}>
-                <div className={styles.mainWrapper}>
-                    <b>Instance not active. Transfer your playback using your Spotify app</b>
-                    <button 
-                        className={styles.transferPlaybackButton} 
-                        onClick={transferPlayback}
-                    >
-                        Transfer Playback to Riffle
-                    </button>
-                </div>
+            <div className={styles.buttonContainer} onClick={transferPlayback}>
+               Play Music on Web
             </div>
         );
-    }
+      }
 
     // Active player state
     return (
         <div className={styles.mainWrapper}>
-            <div className="main-wrapper">
-                <img 
-                    src={current_track.album.images[0].url} 
-                    className={styles.nowPlayingCover} 
-                    alt="" 
-                />
+            <div className={styles.coverContainer}>
+               <div className={styles.trackInfo}>
+                  <img 
+                     src={current_track.album.images[0].url} 
+                     className={styles.nowPlayingCover} 
+                     alt="" 
+                  />
 
-                <div className={styles.nowPlayingSide}>
-                    <div className={styles.nowPlayingName}>{current_track.name}</div>
-                    <div className={styles.nowPlayingArtist}>{current_track.artists[0].name}</div>
+                  <div className={styles.nowPlayingSide}>
+                     <div className={styles.nowPlayingArtist}>{current_track.artists[0].name}</div>
+                     <div className={styles.nowPlayingName}>{current_track.name}</div>
+                  </div>
+               </div>
 
                 <div className={styles.container}>
                     <button 
@@ -259,10 +248,8 @@ function WebPlayback(props) {
                         &gt;&gt;
                     </button>
                 </div>
-                
-                </div>
             </div>
-        </div>
+         </div>   
     );
 }
 

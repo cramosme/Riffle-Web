@@ -80,29 +80,36 @@ export default function Stats() {
   return (
     <div className={styles.container}>
       <div className={styles.contentWrapper}>
-        {/* Insert web playback here */}
-        {token && <WebPlayback token={token}/>}
         {profileData && artistData && trackData && (
-          <div className={styles.contentWrapper}>
+           <div className={styles.contentWrapper}>
+            <div className={styles.cardContainer}>
+              <div className={styles.profileContainer}>
             {profileData['images'] && profileData['images'][0] && (
-              <Image 
-                src={profileData['images'][0]['url']} 
-                alt="Profile" 
-                width={profileData['images'][0]['width'] || 200} 
-                height={profileData['images'][0]['height'] || 200}
-              />
+               <Image 
+               src={profileData['images'][0]['url']} 
+               alt="Profile" 
+               width={ 160 } 
+               height={ 160 }
+               className={styles.profileImage}
+               />
             )}
-            
             <p className={styles.displayName}>
               {profileData['display_name']}
             </p>
+            </div>
+            <div className={styles.webPlaybackContainer}>
+               {token && <WebPlayback token={token}/>}
+            </div>
+            </div>
+            
+
             
             <p className={styles.sectionTitle}>
               Top 5 Artists:
             </p>
             
             <div className={styles.cardContainer}>
-              {artistData.items.slice(0, 5).map((artist, index) => (
+              {artistData?.items?.slice(0, 5).map((artist, index) => (
                 <div key={index} className={styles.cardItem}>
                   {artist['images'] && artist['images'][2] && (
                     <Image 
@@ -110,6 +117,7 @@ export default function Stats() {
                       alt={artist['name']} 
                       width={artist['images'][2]['width'] || 100} 
                       height={artist['images'][2]['height'] || 100}
+                      className={styles.cardArtistImage}
                     />
                   )}
                   
@@ -129,7 +137,7 @@ export default function Stats() {
             </p>
             
             <div className={styles.cardContainer}>
-              {trackData.items.slice(0, 5).map((track, index) => (
+              {trackData?.items?.slice(0, 5).map((track, index) => (
                 <div key={index} className={styles.cardItem}>
                   {track['album']['images'] && track['album']['images'][1] && (
                     <Image 
@@ -150,7 +158,7 @@ export default function Stats() {
                       {' '}{track['artists'][0]['name']}
                     </span>
                     
-                    {track.artists.slice(1, track.artists.length).map((artist, artistIndex) => (
+                    {track?.artists?.slice(1, track.artists.length).map((artist, artistIndex) => (
                       <span key={artistIndex}>
                         , {artist['name']}
                       </span>
