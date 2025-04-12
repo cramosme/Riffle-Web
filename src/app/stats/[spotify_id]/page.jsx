@@ -145,6 +145,7 @@ export default function Stats() {
                       alt={track['name']} 
                       width={160} 
                       height={160}
+                      className={styles.cardAlbumImage}
                     />
                   )}
                   

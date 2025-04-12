@@ -210,26 +210,77 @@ function WebPlayback(props) {
       }
 
     // Active player state
+   //  return (
+   //      <div className={styles.mainWrapper}>
+   //          <div className={styles.coverContainer}>
+   //             <div className={styles.trackInfo}>
+   //                <img 
+   //                   src={current_track.album.images[0].url} 
+   //                   className={styles.nowPlayingCover} 
+   //                   alt="" 
+   //                />
+
+   //                <div className={styles.nowPlayingSide}>
+   //                   <div className={styles.nowPlayingArtist}>{current_track.artists[0].name}</div>
+   //                   <div className={styles.nowPlayingName}>{current_track.name}</div>
+   //                </div>
+   //             </div>
+
+   //              <div className={styles.container}>
+   //                  <button 
+   //                      className={styles.btnSpotify}
+   //                      onClick={handlePreviousTrack}
+   //                  >
+   //                      &lt;&lt;
+   //                  </button>
+
+   //                  <button 
+   //                      className={styles.btnSpotify}
+   //                      onClick={handleTogglePlay}
+   //                  >
+   //                      {is_paused ? "PLAY" : "PAUSE"}
+   //                  </button>
+
+   //                  <button 
+   //                      className={styles.btnSpotify} 
+   //                      onClick={handleNextTrack}
+   //                  >
+   //                      &gt;&gt;
+   //                  </button>
+   //              </div>
+   //          </div>
+   //       </div>   
+   //  );
+   // Active player state with improved structure
     return (
         <div className={styles.mainWrapper}>
             <div className={styles.coverContainer}>
-               <div className={styles.trackInfo}>
-                  <img 
-                     src={current_track.album.images[0].url} 
-                     className={styles.nowPlayingCover} 
-                     alt="" 
-                  />
-
-                  <div className={styles.nowPlayingSide}>
-                     <div className={styles.nowPlayingArtist}>{current_track.artists[0].name}</div>
-                     <div className={styles.nowPlayingName}>{current_track.name}</div>
-                  </div>
-               </div>
+                <div className={styles.trackInfo}>
+                    <div className={styles.albumColumn}>
+                        <img 
+                            src={current_track.album.images[0].url} 
+                            className={styles.nowPlayingCover} 
+                            alt={`Album cover for ${current_track.name}`} 
+                        />
+                    </div>
+                    <div className={styles.nowPlayingSide}>
+                        <div className={styles.nowPlayingArtist}>
+                            {current_track.artists.map((artist, index) => (
+                                <span key={index}>
+                                    {index > 0 ? ", " : ""}
+                                    {artist.name}
+                                </span>
+                            ))}
+                        </div>
+                        <div className={styles.nowPlayingName}>{current_track.name}</div>
+                    </div>
+                </div>
 
                 <div className={styles.container}>
                     <button 
                         className={styles.btnSpotify}
                         onClick={handlePreviousTrack}
+                        aria-label="Previous track"
                     >
                         &lt;&lt;
                     </button>
@@ -237,6 +288,7 @@ function WebPlayback(props) {
                     <button 
                         className={styles.btnSpotify}
                         onClick={handleTogglePlay}
+                        aria-label={is_paused ? "Play" : "Pause"}
                     >
                         {is_paused ? "PLAY" : "PAUSE"}
                     </button>
@@ -244,12 +296,13 @@ function WebPlayback(props) {
                     <button 
                         className={styles.btnSpotify} 
                         onClick={handleNextTrack}
+                        aria-label="Next track"
                     >
                         &gt;&gt;
                     </button>
                 </div>
             </div>
-         </div>   
+        </div>   
     );
 }
 
