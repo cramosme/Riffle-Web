@@ -7,6 +7,7 @@ import SpotifyAuthWithPKCE from '@/components/SpotifyAuthWithPKCE';
 import styles from './layout.module.css';
 import { isUserLoggedIn, getLoggedInUserId } from '@/utils/auth';
 import ProfileDropdown from '@/components/ProfileDropdown';
+import BackgroundParticles from '@/components/BackgroundParticles';
 import './globals.css';
 import { useEffect, useState } from 'react';
 
@@ -155,6 +156,7 @@ export default function RootLayout({ children }) {
         <link rel="icon" href="/images/riffle_logo.png" />
       </head>
       <body className={styles.body}>
+         <BackgroundParticles/>
         <header className={styles.header}>
             {/* Logo and title on the left */}
             <Link href="/" className={styles.logoContainer}>
