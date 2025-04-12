@@ -14,22 +14,31 @@
    color: #fff;
    cursor: pointer;
    transition: background-color 0.2s;
- }
+}
+
+/* Helps with multiple buttons */
+.buttonsContainer {
+   display: flex;
+   flex-direction: column;
+   gap: 20px;
+   margin-top: 40px;
+   width: 200px;
+}
  
  /* Styles specific to default button (login/logout) */
- .primary {
+.primary {
    background-color: #0eaa45;
- }
+}
  
- .primary:active {
+.primary:active {
    background-color: #0c8a3e;
- }
+}
  
  /* Styles specific to destructive buttons (delete account) */
- .danger {
+.danger {
    background-color: #e74c3c;
- }
+}
  
- .danger:active {
+.danger:active {
    background-color: #c0392b;
- }
+}

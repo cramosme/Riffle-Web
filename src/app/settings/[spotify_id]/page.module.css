@@ -1,21 +1,10 @@
 /* Style for Settings page */
 
-/* Style for Settings page */
 .container {
    display: flex;
    flex-direction: column;
-   justify-content: center;
    align-items: center;
    background-color: #25292e;
-   height: 100vh;
-}
-
-.slider {
-   width: 300px;
-}
-
-.sliderValue {
-   color: #fff;
-   font-size: 25px;
-   margin-top: 20px;
+   min-height: 100%;
+   padding: 32px 16px;
  }

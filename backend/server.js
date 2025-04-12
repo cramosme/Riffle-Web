@@ -8,6 +8,7 @@ const { upsertUserProfile } = require('./db/userProfile');
 const { upsertTrack } = require('./db/trackInfo');
 const { upsertTrackInteractions, resetPreviousTopTracks } = require('./db/trackInteractions');
 const { initializeUserSettings, updateUserSettings } = require('./db/userSettings');
+const supabase = require('../lib/supabaseclient');
 
 const app = express();
 app.use(cors());
@@ -33,7 +34,7 @@ app.post('/store-token', async (req, res) => {
    try {
       // Fetch the user's Spotify profile using the access token
       const profileResponse = await axios.get('https://api.spotify.com/v1/me', {
-         headers: { Authorization: `Bearer ${accessToken}` }
+         headers: { Authorization: `Bearer ${access_token}` }
       });
       const profileData = profileResponse['data'];
 
@@ -54,7 +55,7 @@ app.post('/store-token', async (req, res) => {
       console.log('Settings', settings);
 
       // Process tracks in the background
-      processUserTracks(user['spotify_id'], accessToken);
+      processUserTracks(user['spotify_id'], access_token);
 
    } catch (err) {
       console.error('Error processing user data:', err.response?.data || err.message);
@@ -202,8 +203,98 @@ app.get('/me/top/tracks', async (req,res) => {
    }
 });
 
-app.post
+// Used to delete user account
+app.delete('/user/:userId', async (req, res) =>{
 
+   const userId = req.params.userId;
+
+   try{
+      const { data, error } = await supabase
+         .from('User Profile')
+         .delete()
+         .eq('spotify_id', userId)
+   
+      if( error ){
+         console.error("Error deleting user:", error);
+         return res.status(500).json({error: "Failed to delete account"});
+      }
+
+      res.json({success: true, message: "Account successfully deleted"});
+   } catch(error){
+      console.error("Error deleting user account", error);
+      res.status(500).json({error: "Failed to delete account"});
+   }
+});
+
+// Used to update user settings
+app.put('/settings/:userId', async (req, res) => {
+
+   const userId = req.params.userId;
+   const { skip_threshold, default_time_range, theme, data_display_format } = req.body;
+
+   const udpateFields = {};
+   if( skip_threshold !== undefined ) udpateFields.skip_threshold = skip_threshold;
+   if( default_time_range !== undefined ) udpateFields.default_time_range = default_time_range;
+   if( theme !== undefined ) udpateFields.theme = theme;
+   if( data_display_format !== undefined ) udpateFields.data_display_format = data_display_format;
+
+   if( Object.keys(udpateFields).length === 0 ){
+      return res.status(400).json({error: "No update fields provided"});
+   }
+
+   try{
+      const {data, error} = await supabase
+         .from('Setings')
+         .update(udpateFields)
+         .eq('user_id', userId)
+         .select(); 
+
+      if( error ){
+         console.error("Error updating settings:", error);
+         return res.status(500).json({ error: 'Failed to update settings' });
+      }
+
+      res.json({
+         success: true,
+         message: "Settings updated successfully",
+         settings: data[0]
+      });
+
+   } catch( error ){
+      console.error("Error in settings update:", error);
+      return res.status(500).json({error: "Failed to update settings"});
+   }
+
+});
+
+// Used to fetch user settings to prefill settings page
+app.get('/settings/:userId', async (req, res) => {
+
+   const userId = req.params.userId;
+
+   try{
+      const { data, error } = await supabase
+         .from('Settings')
+         .select('*')
+         .eq('user_id', userId)
+         .single();
+      
+      if (error) {
+      console.error('Error fetching settings:', error);
+      return res.status(500).json({ error: 'Failed to fetch settings' });
+      }
+    
+      res.json({ 
+         success: true,
+         settings: data
+      });
+
+   } catch( error ){
+      console.error('Error in fetching settings:', error);
+      res.status(500).json({ error: 'Failed to fetch settings' });
+   }
+
+});
 
 const PORT = 3000;
 app.listen(PORT, () => {
