@@ -13,7 +13,7 @@
    right: 0;
    padding-left: 25px;
 }
- 
+
 .logoContainer {
    display: flex;
    align-items: center;
@@ -63,4 +63,36 @@
    padding: 0;
    margin: 0;
    width: 100%;
+}
+
+.featuresContainer {
+   margin-top: 3rem;
+   display: flex;
+   flex-direction: column;
+   max-width: 700px;
+   margin-left: auto;
+   margin-right: auto;
+}
+
+.featureItem {
+   display: flex;
+   align-items: flex-start;
+   gap: 1rem;
+   margin-bottom: 5rem;
+}
+
+.featureIcon {
+   color: #1ED760;
+   min-width: 40px;
+}
+
+.featureTitle {
+   margin: 0;
+   font-size: 1.25rem;
+   font-weight: bold;
+}
+
+.featureDesc {
+   margin: 0.25rem 0 0;
+   color: #ccc;
 }
