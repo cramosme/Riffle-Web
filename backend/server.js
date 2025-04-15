@@ -54,9 +54,6 @@ app.post('/store-token', async (req, res) => {
       console.log('User data fetched successfully:', user);
       console.log('Settings', settings);
 
-      // Process tracks in the background
-      processUserTracks(user['spotify_id'], access_token);
-
    } catch (err) {
       console.error('Error processing user data:', err.response?.data || err.message);
    }
@@ -146,10 +143,10 @@ app.get('/me', async (req,res) => {
       });
       const userId = response["data"]["id"];
 
-      // Have to call this here since user might not always login, this takes care of users who are still logged in from previous session
-      processUserTracks(userId, token).catch(err => {
-         console.error("Error processing tracks:", err);
-      })
+      // // Have to call this here since user might not always login, this takes care of users who are still logged in from previous session
+      // processUserTracks(userId, token).catch(err => {
+      //    console.error("Error processing tracks:", err);
+      // })
 
       res.json(response.data);
    }
