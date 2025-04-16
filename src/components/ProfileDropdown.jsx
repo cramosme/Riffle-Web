@@ -9,35 +9,35 @@ import styles from './ProfileDropdown.module.css';
 import defaultImage from '../../public/images/default_image.png'
 
 export default function ProfileDropdown({ userId, profileImageUrl }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef(null);
-  
-  // Default profile image if none is provided
-  const imageUrl = profileImageUrl || defaultImage;
-  
-  // Toggle dropdown state
-  const toggleDropdown = () => {
-    setIsOpen(!isOpen);
-  };
-  
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
+   const [isOpen, setIsOpen] = useState(false);
+   const dropdownRef = useRef(null);
+   
+   // Default profile image if none is provided
+   const imageUrl = profileImageUrl || defaultImage;
+   
+   // Toggle dropdown state
+   const toggleDropdown = () => {
+      setIsOpen(!isOpen);
+   };
+   
+   // Close dropdown when clicking outside
+   useEffect(() => {
+      function handleClickOutside(event) {
+         if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+         setIsOpen(false);
+         }
       }
-    }
-    
-    // Add event listener when dropdown is open
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    
-    // Clean up
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen]);
+      
+      // Add event listener when dropdown is open
+      if (isOpen) {
+         document.addEventListener('mousedown', handleClickOutside);
+      }
+      
+      // Clean up
+      return () => {
+         document.removeEventListener('mousedown', handleClickOutside);
+      };
+   }, [isOpen]);
   
   return (
     <div className={styles.container} ref={dropdownRef}>
@@ -66,6 +66,13 @@ export default function ProfileDropdown({ userId, profileImageUrl }) {
             onClick={() => setIsOpen(false)}
           >
             Settings
+          </Link>
+          <Link
+            href={`/import/${userId}`}
+            className={styles.dropdownItem}
+            onClick={() => setIsOpen(false)}
+          >
+            Import
           </Link>
         </div>
       )}

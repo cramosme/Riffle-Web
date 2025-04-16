@@ -21,7 +21,7 @@
 }
 
 .logoImage {
-   margin-left: 40px;
+   margin-left: 50px;
 }
 
 .logoText {
@@ -30,6 +30,10 @@
    font-weight: bold;
    color: white;
    font-family: 'Lato-Bold', Arial, sans-serif;
+}
+
+.logoText:hover {
+   color:#0eaa45;
 }
 
 .navContainer {
@@ -43,6 +47,12 @@
    color: white;
    font-family: 'Lato-Bold', Arial, sans-serif;
    text-decoration: none;
+   display: inline-block;
+   text-align: center;
+   min-width: 100px;
+}
+.navLink:hover {
+   color:#0eaa45;
 }
 
 .html {

@@ -115,6 +115,7 @@ export default function RootLayout({ children }) {
    // Helper to check if we're on a specific route type
    const isStatsRoute = pathname?.includes('/stats/');
    const isSettingsRoute = pathname?.includes('/settings/');
+   const isImportRoute = pathname?.includes('/import/');
    const isIndexRoute = pathname === '/';
 
    useEffect(() => {
@@ -146,65 +147,97 @@ export default function RootLayout({ children }) {
       return () => clearInterval(interval);
    }, []);
 
-  return (
-    <html lang="en" className={styles.html}>
-      <head>
-        <title>Riffle</title>
-        <meta httpEquiv="Content-Language" content="en" />
-        <meta name="google" content="notranslate" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="icon" href="/images/riffle_logo.png" />
-      </head>
-      <body className={styles.body}>
-         <BackgroundParticles/>
-        <header className={styles.header}>
-            {/* Logo and title on the left */}
-            <Link href="/" className={styles.logoContainer}>
-                  <Image 
-                     src="/images/riffle_logo.png" 
-                     alt="Riffle Logo" 
-                     width={50} 
-                     height={50}
-                     className={styles.logoImage}
-                  />
-                  <span className={styles.logoText}>
-                     Riffle
-                  </span>
-            </Link>
-          
-          {/* Navigation links or auth button on the right */}
-          <div className={styles.navContainer}>
-            {isIndexRoute && authChecked && ( isLoggedIn ? (
-               <ProfileDropdown userId={userId} profileImageUrl={profileImage} />
-            ) : (
-               <SpotifyAuthWithPKCE/>
-            )
-            )}
-            
-            {isStatsRoute && (
-              <Link 
-                href={pathname?.replace('/stats/', '/settings/')} 
-                className={styles.navLink}
-              >
-                Settings
-              </Link>
-            )}
-            
-            {isSettingsRoute && (
-              <Link 
-                href={pathname?.replace('/settings/', '/stats/')} 
-                className={styles.navLink}
-              >
-                Stats
-              </Link>
-            )}
-          </div>
-        </header>
-        
-        <main className={styles.main}>
-          {children}
-        </main>
-      </body>
-    </html>
-  );
+   return (
+      <html lang="en" className={styles.html}>
+         <head>
+         <title>Riffle</title>
+         <meta httpEquiv="Content-Language" content="en" />
+         <meta name="google" content="notranslate" />
+         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+         <link rel="icon" href="/images/riffle_logo.png" />
+         </head>
+         <body className={styles.body}>
+            <BackgroundParticles/>
+            <header className={styles.header}>
+               {/* Logo and title on the left */}
+               <Link href="/" className={styles.logoContainer}>
+                     <Image 
+                        src="/images/riffle_logo.png" 
+                        alt="Riffle Logo" 
+                        width={50} 
+                        height={50}
+                        className={styles.logoImage}
+                     />
+                     <span className={styles.logoText}>
+                        Riffle
+                     </span>
+               </Link>
+               
+               {/* Navigation links or auth button on the right */}
+               <div className={styles.navContainer}>
+                  {isIndexRoute && authChecked && ( isLoggedIn ? (
+                     <ProfileDropdown userId={userId} profileImageUrl={profileImage} />
+                  ) : (
+                     <SpotifyAuthWithPKCE/>
+                  )
+                  )}
+                  
+                  {isStatsRoute && (
+                     <>
+                        <Link
+                           href={`/import/${userId}`}
+                           className={styles.navLink}
+                        >
+                           Import
+                        </Link>
+                        <Link 
+                           href={`/settings/${userId}`} 
+                           className={styles.navLink}
+                        >
+                           Settings
+                        </Link>
+                     </>
+                  )}
+                  
+                  {isSettingsRoute && (
+                     <>
+                        <Link
+                           href={`/import/${userId}`}
+                           className={styles.navLink}
+                           >
+                           Import
+                        </Link>
+                        <Link 
+                           href={`/stats/${userId}`} 
+                           className={styles.navLink}
+                        >
+                           Stats
+                        </Link>
+                     </>
+                  )}
+
+                  {isImportRoute && (
+                     <>
+                        <Link
+                           href={`/stats/${userId}`}
+                           className={styles.navLink}
+                        >
+                           Stats
+                        </Link>
+                        <Link
+                           href={`/settings/${userId}`}
+                           className={styles.navLink}
+                        >
+                           Settings
+                        </Link>
+                     </>
+                  )}
+               </div>
+            </header>
+            <main className={styles.main}>
+               {children}
+            </main>
+         </body>
+      </html>
+   );
 }
