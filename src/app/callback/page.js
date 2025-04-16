@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 const clientId = process.env.NEXT_PUBLIC_CLIENT_ID;
@@ -8,6 +8,9 @@ const redirectUri = 'http://localhost:8081/callback'
 
 
 export default function Callback() {
+
+   const [loggedIn, setLoggedIn] = useState(false);
+
    const searchParams = useSearchParams();
    const router = useRouter();
    const code = searchParams.get("code");
@@ -20,6 +23,7 @@ export default function Callback() {
             setTimeout(() => {
                router.replace('/');
             }, 0);
+            setLoggedIn(false);
             return;
          }
 
@@ -30,6 +34,7 @@ export default function Callback() {
                setTimeout(() => {
                   router.replace('/');
                }, 0);
+               setLoggedIn(false);
                return;
             }
 
@@ -77,7 +82,8 @@ export default function Callback() {
 
                // Redirect to stats page
                router.replace(`/stats/${userId}`);
-
+               setLoggedIn(true);
+               
                // Send tokens to backend after redirect
                sendTokenToBackend(data.access_token, data.refresh_token || null, expiryTime);
 
@@ -86,6 +92,7 @@ export default function Callback() {
                setTimeout(() => {
                   router.replace('/');
                }, 0);
+               setLoggedIn(false);
                return;
             }
          } catch (error) {
@@ -93,6 +100,7 @@ export default function Callback() {
             setTimeout(() => {
                router.replace('/');
             }, 0);
+            setLoggedIn(false);
             return;
          }
       };
@@ -120,16 +128,20 @@ export default function Callback() {
       }
    }
 
+   if( !loggedIn ){
+      return (
+         null
+      );
+   }
    return (
       <div style={{ 
          display: 'flex', 
          justifyContent: 'center', 
          alignItems: 'center', 
          height: '100vh',
-         backgroundColor: '#25292e',
          color: 'white',
          fontFamily: 'Lato-Bold, Arial, sans-serif',
-         fontSize: '1.5rem'
+         fontSize: '24px'
       }}>
          Logging you in...
       </div>
