@@ -62,7 +62,7 @@ export default function BackgroundParticles() {
                      default: "bounce",
                   },
                   random: false,
-                  speed: 1.5,
+                  speed: 1,
                   straight: false,
                },
                number: {
