@@ -27,6 +27,9 @@ export default function Settings() {
       fetchSettings();
    }, []);
 
+   const handleSkipThresholdChange = (e) => {
+      setSkipThreshold(parseInt(e.target.value));
+   }
 
    // Logout function, pretty straightforward just clear out the stored info and redirect to homepage
    const handleLogout = () => {
@@ -71,6 +74,7 @@ export default function Settings() {
                type="number"
                id="skipThreshold"
                value={skipThreshold}
+               onChange={handleSkipThresholdChange}
                min="1"
                max="100"
             />
