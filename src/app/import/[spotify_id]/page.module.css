@@ -214,3 +214,18 @@
    padding: 16px;
  }
  
+.progressBarContainer {
+   width: 100%;
+   height: 20px;
+   background-color: rgba(14, 170, 69, 0.1);
+   border-radius: 10px;
+   overflow: hidden;
+   margin: 8px 0;
+ }
+ 
+ .progressBar {
+   height: 100%;
+   background-color: #0eaa45;
+   border-radius: 10px;
+   transition: width 0.3s ease;
+ }

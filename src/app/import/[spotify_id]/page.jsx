@@ -7,7 +7,9 @@ import styles from "./page.module.css";
 export default function ImportPage(){
    const [files, setFiles] = useState([]);
    const [isDragging, setIsDragging] = useState(false);
-   const [uploadStatus, setUploadStatus] = useState('idle');
+   const [uploadStatus, setUploadStatus] = useState("idle");
+   const [processStatus, setProcessStatus] = useState("idle");
+   const [processProgress, setProcessProgress] = useState(0);
 
    const handleDragOver = (e) =>{
       e.preventDefault();
@@ -23,14 +25,14 @@ export default function ImportPage(){
       setIsDragging(false);
 
       const droppedFiles = Array.from(e.dataTransfer.files);
-      const jsonFiles = droppedFiles.filter(file => file.name.endsWith('.json'));
+      const jsonFiles = droppedFiles.filter(file => file.name.endsWith(".json"));
 
       setFiles(prevFiles => [...prevFiles, ...jsonFiles]); // Combines previous files with new files
    };
 
    const handleFileSelect = (e) => {
       const selectedFiles = Array.from(e.target.files);
-      const jsonFiles = selectedFiles.filter(file => file.name.endsWith('.json'));
+      const jsonFiles = selectedFiles.filter(file => file.name.endsWith(".json"));
       
       setFiles(prevFiles => [...prevFiles, ...jsonFiles]);
    };
@@ -39,22 +41,47 @@ export default function ImportPage(){
       setFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
    };
 
+   // Function for progress bar so user is aware that theyre files are being procesed
+   const processFiles = () => {
+      setProcessStatus("processing");
+      setProcessProgress(0);
+
+      // Used for testing bar
+      const totalSteps = 100;
+      let currentStep = 0;
+
+      const processInterval = setInterval(() => {
+         if( currentStep < totalSteps ){
+            currentStep += 1;
+            setProcessProgress(currentStep);
+         }
+         else{
+            clearInterval(processInterval);
+            setProcessStatus("complete");
+
+            // After 5 seconds, reset everything
+            setTimeout(() => {
+               setFiles([]);
+               setUploadStatus('idle');
+               setProcessStatus('idle');
+               setProcessProgress(0);
+            }, 5000);
+         }
+      }, 100); // Will update every 100ms
+   };
+
    const handleUpload = () => {
 
       
       // This is just a UI placeholder - actual upload functionality will be implemented later
-      setUploadStatus('uploading');
+      setUploadStatus("uploading");
       
       setTimeout(() => {
          // Using this to test whether i clear the files after successful upload
-         const isSuccess = Math.random() < 0.5;
+         const isSuccess = Math.random() < 0.7;
          if( isSuccess ){
             setUploadStatus("success");
-            // This will clear the files list after successful upload, might try and add a progress bar for processing the files instead of just making it disappear.
-            setTimeout(() => {
-               setFiles([]);
-               setUploadStatus('idle');
-            }, 3000);
+            processFiles();
          }
          else{
             setUploadStatus("error");
@@ -79,7 +106,7 @@ export default function ImportPage(){
                </p>
                
                <div 
-               className={`${styles.dropZone} ${isDragging ? styles.dragging : ''}`}
+               className={`${styles.dropZone} ${isDragging ? styles.dragging : ""}`}
                onDragOver={handleDragOver}
                onDragLeave={handleDragLeave}
                onDrop={handleDrop}
@@ -126,18 +153,38 @@ export default function ImportPage(){
                   <button 
                      onClick={handleUpload} 
                      className={styles.uploadButton}
-                     disabled={uploadStatus === 'uploading'}
+                     disabled={uploadStatus === "uploading" || processStatus === "processing"}
                   >
-                     {uploadStatus === 'uploading' ? 'Uploading...' : 'Upload Files'}
+                     {uploadStatus === "uploading" ? "Uploading..." : "Upload Files"}
                   </button>
                   
-                  {uploadStatus === 'success' && (
+                  {uploadStatus === "success" && processStatus === "idle" && (
                      <p style={{ color: "#0eaa45", marginTop: "16px", fontWeight: "bold" }}>
-                        Files uploaded successfully! Your data is being processed.
+                        Files uploaded successfully! Processing will begin shortly.
                      </p>
                   )}
                   
-                  {uploadStatus === 'error' && (
+                  {processStatus === "processing" && (
+                     <div style={{marginTop: "16px"}}>
+                        <p style={{marginBottom: "8px"}}>
+                           Processing your files...( {processProgress < 100  ? `${processProgress}%` : `${processProgress}`})
+                        </p>
+                        <div className={styles.progressBarContainer}>
+                           <div className={styles.progressBar} style={{width: `${processProgress}%`}}/>   
+                        </div>
+                        <p style={{fontSize: "14px", color:"#a0a0a0", marginTop: "8px"}}>
+                           This may take several minutes for large files.
+                        </p>
+                     </div>
+                  )}
+
+                  {processStatus === "complete" && (
+                     <p style={{color:"#0eaa45", marginTop: "16px", fontWeight: "bold"}}>
+                        Processing complete! Your lifetime stats are now available.
+                     </p>
+                  )}
+
+                  {uploadStatus === "error" && (
                      <p style={{ color: "#e74c3c", marginTop: "16px", fontWeight: "bold" }}>
                         There was an error uploading your files. Please try again.
                      </p>
@@ -146,7 +193,7 @@ export default function ImportPage(){
                )}
                
                <div className={styles.benefitsBox}>
-               <h3 style={{color: "#0eaa45", marginTop: 0}}>What you'll get:</h3>
+               <h3 style={{color: "#0eaa45", marginTop: 0}}>What you"ll get:</h3>
                <ul className={styles.benefitsList}>
                   <li>Lifetime listening history</li>
                   <li>Accurate listen and skip counts</li>
@@ -156,7 +203,7 @@ export default function ImportPage(){
                </div>
             </div>
 
-            <h2 className={styles.instructionsTitle}>Don't have your data yet? Here's how to get it:</h2>
+            <h2 className={styles.instructionsTitle}>Don"t have your data yet? Here"s how to get it:</h2>
             
             {/* Step 1: Request data */}
             <div className={styles.importBox}>
@@ -216,7 +263,7 @@ export default function ImportPage(){
                </div>
                
                <p className={styles.instructions}>
-               When Spotify has prepared your data, you'll receive an email with a download link
+               When Spotify has prepared your data, you"ll receive an email with a download link
                </p>
                
                <div className={styles.imageContainer}>
