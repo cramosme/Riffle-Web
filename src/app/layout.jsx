@@ -8,6 +8,7 @@ import styles from './layout.module.css';
 import { isUserLoggedIn, getLoggedInUserId } from '@/utils/auth';
 import ProfileDropdown from '@/components/ProfileDropdown';
 import BackgroundParticles from '@/components/BackgroundParticles';
+import { SpotifyProvider } from '@/context/SpotifyContext';
 import './globals.css';
 import { useEffect, useState } from 'react';
 
@@ -147,6 +148,13 @@ export default function RootLayout({ children }) {
       return () => clearInterval(interval);
    }, []);
 
+   // Wrap the application with SpotifyProvider only if the user is logged in
+   const wrappedChildren = isLoggedIn ? (
+      <SpotifyProvider>
+         {children}
+      </SpotifyProvider>
+   ) : children;
+
    return (
       <html lang="en" className={styles.html}>
          <head>
@@ -235,7 +243,7 @@ export default function RootLayout({ children }) {
                </div>
             </header>
             <main className={styles.main}>
-               {children}
+               {wrappedChildren}
             </main>
          </body>
       </html>
