@@ -16,6 +16,10 @@
    transition: background-color 0.2s;
 }
 
+.button:hover {
+   background-color: #0c8a3e;
+}
+
 /* Helps with multiple buttons */
 .buttonsContainer {
    display: flex;
