@@ -78,6 +78,11 @@ async function processImportInBackground(userId, files, accessToken) {
 
    console.log(`Starting import processing for user ${userId}`);
 
+   const startTime = Date.now();
+   const startDate = new Date(startTime);
+   const formattedStartTime = startDate.toLocaleTimeString();
+   console.log(`Started at ${formattedStartTime}`);
+
    try{
 
       if( !accessToken ){
@@ -136,10 +141,10 @@ async function processImportInBackground(userId, files, accessToken) {
             processedEntries++;
 
             // Update progress every entry or if completed
-            if( processedEntries % 1000 === 0 || processedEntries === totalEntries ){
+            if( processedEntries % 100 === 0 || processedEntries === totalEntries ){
                sendProgressUpdate(connection, {
                   status: "processing",
-                  progress: Math.round((processedEntries/totalEntries) * 30), // 30% for first part
+                  progress: Math.round((processedEntries/totalEntries) * 20), // 20% for first part
                   processed: processedEntries,
                   total: totalEntries,
                   phase: "collecting"
@@ -152,11 +157,18 @@ async function processImportInBackground(userId, files, accessToken) {
 
       // Fetch data from spotify api
       console.log("Fetching track data from spotify...");
+      setTimeout( () => {
+         sendProgressUpdate(connection, {
+            status: "processing",
+            progress: 25, // Putting this here to mark the change in phases
+            phase: "fetching_track_data"
+         });
+      }, 2000);
       const apiTrackData = await getTrackData(Array.from(uniqueTrackIds), accessToken);
 
       sendProgressUpdate(connection, {
          status: "processing",
-         progress: 50, // 50% after fetching data, these are just numbers based on how much calculation i think is being done, they can be anything
+         progress: 30, // 30% after fetching data, these are just numbers based on how much calculation i think is being done, they can be anything
          phase: "fetching_track_data"
       });
 
@@ -175,6 +187,15 @@ async function processImportInBackground(userId, files, accessToken) {
       const totalTracks = trackInteractions.size;
       const batchSize = 50; // Process in batches
       
+      console.log("Processing track interactions...")
+      setTimeout( () => {
+         sendProgressUpdate(connection, {
+            status: "processing",
+            progress: 35, // Still 35 at the start of the processing phase, longest phase so should have the most %
+            phase: "processing_interactions"
+         });
+      }, 2000);
+
       for await (const [trackId, interactions] of trackInteractions) {
          const firstInteraction = interactions[0];
          const { duration_ms, album_image } = apiTrackData[trackId] || { duration_ms: 0, album_image: null };
@@ -218,7 +239,7 @@ async function processImportInBackground(userId, files, accessToken) {
          if( interactionCount % 100 === 0 || interactionCount === totalTracks ){
             sendProgressUpdate(connection, {
                status: "processing",
-               progress: 50 + Math.round((interactionCount/totalTracks) * 40),
+               progress: 35 + Math.round((interactionCount/totalTracks) * 50), // Up to 85
                phase: "processing_interactions",
                interactionCount,
                totalTracks
@@ -227,7 +248,15 @@ async function processImportInBackground(userId, files, accessToken) {
       }
 
       // Calculate minutes listened for all processed tracks
-      console.log("Calculating minutes listened for all tracks...");
+      console.log("Calculating statistics for all tracks...");
+      setTimeout( ()=> {
+         sendProgressUpdate(connection, {
+            status: "processing",
+            progress: 85, // Still 85 at the start of the processing phase
+            phase: "calculating"
+         });
+      }, 2000);
+
       let calculatedTracks = 0;
       const totalTrackIds = uniqueTrackIds.size;
 
@@ -240,7 +269,7 @@ async function processImportInBackground(userId, files, accessToken) {
             if( calculatedTracks % 100 === 0 || calculatedTracks === totalTrackIds ){
                sendProgressUpdate(connection, {
                   status: "processing",
-                  progress: 90 + Math.round((calculatedTracks/totalTrackIds) * 10), // Last 10%
+                  progress: 85 + Math.round((calculatedTracks/totalTrackIds) * 15), // Last 15%
                   phase: "calculating",
                   calculatedTracks,
                   totalTracks: totalTrackIds
@@ -251,6 +280,19 @@ async function processImportInBackground(userId, files, accessToken) {
             calculatedTracks++;
          }
       }
+
+      const endTime = Date.now();
+      const endDate = new Date(endTime);
+      const formattedEndTime = endDate.toLocaleTimeString();
+      console.log(`Completed at ${formattedEndTime}`);
+      const elapsedTime = (((endTime - startTime)/1000)/60).toFixed(2);
+      console.log(`Import progress completed in ${elapsedTime} minutes`);
+
+      // Update user profile to reflect import
+      const { user, error } = await upsertUserProfile({
+         id: userId,
+         imported_history: true
+      });
 
       // Send final completion update
       sendProgressUpdate(connection, {
@@ -621,6 +663,31 @@ app.post('/import-history/:userId', async (req, res) => {
    setTimeout(() =>{
       processImportInBackground(userId, files, accessToken);
    }, 2000);
+});
+
+// Check if a user has imported their history
+app.get('/user/import-status/:userId', async (req, res) => {
+   const userId = req.params.userId;
+
+   try{
+      const { data, error } = await supabase
+         .from("User Profile")
+         .select("imported_history")
+         .eq("spotify_id", userId)
+         .single();
+
+      if( error ) {
+         console.error("Error checking import status:", error);
+         return res.status(500).json({ error: "Failed to check import status" });
+      }
+
+      return res.json({
+         hasImported: data?.imported_history || false
+      });
+   } catch (error ){
+      console.error('Error in import status check:', error);
+      return res.status(500).json({ error: 'Failed to check import status' });
+   }
 });
 
 const PORT = 3000;

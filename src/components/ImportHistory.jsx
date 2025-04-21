@@ -1,7 +1,7 @@
 /* Import logic */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import styles from "./ImportHistory.module.css";
 import { useImport } from "@/context/ImportContext";
@@ -14,13 +14,24 @@ export default function ImportHistory({ userId }) {
       processPhase,
       statsData,
       error,
-      startImport
+      isUIReady,
+      startImport,
+      resetImportState
    } = useImport();
 
    const [files, setFiles] = useState([]);
    const [isDragging, setIsDragging] = useState(false);
    const [uploadStatus, setUploadStatus] = useState("idle");
    const [uploadError, setUploadError] = useState(null);
+
+   // Reset component stat when import process is reset
+   useEffect( () => {
+      if( processStatus === "idle" && uploadStatus !== "idle" ){
+         setUploadStatus("idle");
+         setFiles([]);
+         setUploadError(null);
+      }
+   }, [processStatus, uploadStatus]);
 
    const handleDragOver = (e) => {
       e.preventDefault();
@@ -35,17 +46,21 @@ export default function ImportHistory({ userId }) {
       e.preventDefault();
       setIsDragging(false);
 
-      const droppedFiles = Array.from(e.dataTransfer.files);
-      const jsonFiles = droppedFiles.filter(file => file.name.endsWith(".json"));
-
-      setFiles(prevFiles => [...prevFiles, ...jsonFiles]);
+      // Only allow file drops if we're not currently processing
+      if( processStatus !== "processing" ){
+         const droppedFiles = Array.from(e.dataTransfer.files);
+         const jsonFiles = droppedFiles.filter(file => file.name.endsWith(".json"));
+         setFiles(prevFiles => [...prevFiles, ...jsonFiles]);
+      }
    };
 
    const handleFileSelect = (e) => {
-      const selectedFiles = Array.from(e.target.files);
-      const jsonFiles = selectedFiles.filter(file => file.name.endsWith(".json"));
-      
-      setFiles(prevFiles => [...prevFiles, ...jsonFiles]);
+      // Only allow file selection if we're not currently processing
+      if( processStatus !== "processing" ){
+         const selectedFiles = Array.from(e.target.files);
+         const jsonFiles = selectedFiles.filter(file => file.name.endsWith(".json"));
+         setFiles(prevFiles => [...prevFiles, ...jsonFiles]);
+      }
    };
 
    const handleRemoveFile = (index) => {
@@ -100,6 +115,12 @@ export default function ImportHistory({ userId }) {
       }
    };
 
+   const handleRetry = () => {
+      resetImportState();
+      setUploadStatus("idle");
+      setUploadError(null);
+   }
+
    const readFileAsJSON = (file) => {
       return new Promise((resolve, reject) => {
          const reader = new FileReader();
@@ -126,6 +147,130 @@ export default function ImportHistory({ userId }) {
          reader.readAsText(file);
       });
    };
+   
+   // Don't render until we've checked saved state
+   if( !isUIReady ){
+      return (
+         <div className={styles.uploadContainer}>
+            <div className={styles.stepContainer}>
+               <h2 className={styles.stepTitle}>Loading import history...</h2>
+            </div>
+         </div>
+      );
+   }
+
+    // Render the active processing state if we're in the middle of processing
+    if (processStatus === "processing") {
+      return (
+         <div className={styles.uploadContainer}>
+            <div className={styles.stepContainer}>
+               <h2 className={styles.stepTitle}>Processing your Spotify history</h2>
+            </div>
+            
+            <div style={{marginTop: "24px"}}>
+               <p style={{marginBottom: "16px", fontSize: "18px"}}>
+                  {processPhase === "initializing" && "Preparing to process your files..."}
+                  {processPhase === "collecting" && "Collecting track information..."}
+                  {processPhase === "fetching_track_data" && "Fetching track data from Spotify..."}
+                  {processPhase === "processing_interactions" && "Processing your listening history..."}
+                  {processPhase === "calculating" && "Calculating listening statistics..."}
+               </p>
+               
+               <div className={styles.progressBarContainer}>
+                  <div 
+                     className={styles.progressBar} 
+                     style={{width: `${processProgress}%`}}
+                  />   
+               </div>
+               
+               <p style={{
+                  fontSize: "16px", 
+                  marginTop: "8px",
+                  textAlign: "center"
+               }}>
+                  {processProgress}% complete
+               </p>
+               
+               <p style={{
+                  fontSize: "14px", 
+                  color: "#a0a0a0", 
+                  marginTop: "16px",
+                  textAlign: "center"
+               }}>
+                  This may take up to 2 hours for large files. You can close this page and come back later.
+               </p>
+            </div>
+         </div>
+      );
+   }
+
+   // Render the completed state
+   if (processStatus === "complete" && statsData) {
+      return (
+         <div className={styles.uploadContainer}>
+            <div className={styles.stepContainer}>
+               <h2 className={styles.stepTitle}>Processing Complete!</h2>
+            </div>
+            
+            <div style={{
+               marginTop: "24px", 
+               backgroundColor: "rgba(14, 170, 69, 0.1)",
+               padding: "20px",
+               borderRadius: "8px",
+               textAlign: "center"
+            }}>
+               <p style={{fontWeight: "bold", fontSize: "18px", marginBottom: "16px"}}>
+                  Your Spotify history has been successfully processed!
+               </p>
+               
+               <div style={{margin: "20px 0"}}>
+                  <p>Processed {statsData.totalProcessed} entries</p>
+                  <p>Skipped {statsData.totalSkipped} entries (no track URI)</p>
+                  <p>Imported {statsData.uniqueTracks} unique tracks</p>
+               </div>
+               
+               <button 
+                  onClick={handleRetry}
+                  className={styles.uploadButton}
+                  style={{maxWidth: "200px", margin: "0 auto"}}
+               >
+                  Upload More Files
+               </button>
+            </div>
+         </div>
+      );
+   }
+
+   // Render the error state
+   if (processStatus === "error") {
+      return (
+         <div className={styles.uploadContainer}>
+            <div className={styles.stepContainer}>
+               <h2 className={styles.stepTitle}>Processing Error</h2>
+            </div>
+            
+            <div style={{
+               marginTop: "24px", 
+               backgroundColor: "rgba(231, 76, 60, 0.1)",
+               padding: "20px",
+               borderRadius: "8px",
+               textAlign: "center"
+            }}>
+               <p style={{color: "#e74c3c", fontWeight: "bold", marginBottom: "16px"}}>
+                  Error: {error || "There was an error processing your files."}
+               </p>
+               
+               <button 
+                  onClick={handleRetry}
+                  className={styles.uploadButton}
+                  style={{maxWidth: "200px", margin: "0 auto"}}
+               >
+                  Try Again
+               </button>
+            </div>
+         </div>
+      );
+   }
 
    return (
       <div className={styles.uploadContainer}>
@@ -195,40 +340,10 @@ export default function ImportHistory({ userId }) {
                      Files uploaded successfully! Processing will begin shortly.
                   </p>
                )}
-               
-               {processStatus === "processing" && uploadStatus === "success" && (
-                  <div style={{marginTop: "16px"}}>
-                     <p style={{marginBottom: "8px"}}>
-                        {processPhase === "calculating" 
-                           ? "Calculating minutes listened..." 
-                           : processPhase === "fetching_track_data"
-                           ? "Fetching track data from Spotify..."
-                           : processPhase === "processing_interactions"
-                           ? "Processing track interactions..."
-                           : "Processing your files..."}
-                        ({processProgress}%)
-                     </p>
-                     <div className={styles.progressBarContainer}>
-                        <div className={styles.progressBar} style={{width: `${processProgress}%`}}/>   
-                     </div>
-                     <p style={{fontSize: "14px", color:"#a0a0a0", marginTop: "8px"}}>
-                        This may take several minutes for large files.
-                     </p>
-                  </div>
-               )}
 
-               {processStatus === "complete" && statsData && (
-                  <div style={{marginTop: "16px", color: "#0eaa45"}}>
-                     <p style={{fontWeight: "bold"}}>Processing complete!</p>
-                     <p>Processed {statsData.totalProcessed} entries</p>
-                     <p>Skipped {statsData.totalSkipped} entries (no track URI)</p>
-                     <p>Imported {statsData.uniqueTracks} unique tracks</p>
-                  </div>
-               )}
-
-               {(uploadStatus === "error" || processStatus === "error") && (
+               {uploadStatus === "error"  && (
                   <p style={{ color: "#e74c3c", marginTop: "16px", fontWeight: "bold" }}>
-                     Error: {uploadError || error || "There was an error processing your files. Please try again."}
+                     Error: {uploadError || error || "There was an error uploading your files. Please try again."}
                   </p>
                )}
             </div>

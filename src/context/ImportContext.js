@@ -12,8 +12,10 @@ export function ImportProvider({ children }) {
    const [processPhase, setProcessPhase] = useState("");
    const [statsData, setStatsData] = useState(null);
    const [error, setError] = useState(null);
+   const [isUIReady, setIsUIReady] = useState(false);
    
    const eventSourceRef = useRef(null);
+   const reconnectAttemptRef = useRef(0);
    
    // Initialize userId from localStorage
    useEffect(() => {
@@ -44,6 +46,8 @@ export function ImportProvider({ children }) {
          
          connectToProgressUpdates();
       }
+
+      setIsUIReady(true); // Mark UI as ready after checking save state
       
       return () => {
          if (eventSourceRef.current) {
@@ -71,6 +75,7 @@ export function ImportProvider({ children }) {
 
       eventSource.onopen = () => {
          console.log("EventSource connection established");
+         reconnectAttemptRef.current = 0; // Reset reconnect attempts on successful connection
       }
       
       eventSource.onmessage = (event) => {
@@ -123,8 +128,15 @@ export function ImportProvider({ children }) {
       eventSource.onerror = (error) => {
          console.error("SSE connection error:", error);
          
+         eventSource.close();
+         // Clear persisted state
+         // localStorage.removeItem(`import_process_status_${userId}`);
+         // localStorage.removeItem(`import_process_progress_${userId}`);
+         // localStorage.removeItem(`import_process_phase_${userId}`);
+
          // Attempt to reconnect if still processing
          if (processStatus === "processing") {
+            reconnectAttemptRef.current += 1;
             setTimeout(() => {
                console.log("Attempting to reconnect...");
                connectToProgressUpdates();
@@ -138,6 +150,7 @@ export function ImportProvider({ children }) {
       setProcessStatus("processing");
       setProcessProgress(0);
       setProcessPhase("initializing");
+      setError(null);
 
       // Save initial state immediately
       if (userId) {
@@ -148,6 +161,24 @@ export function ImportProvider({ children }) {
 
       connectToProgressUpdates();
    };
+
+   const resetImportState = () => {
+      // Only allow resetting if we're in an error state or complete state
+      if (processStatus === "error" || processStatus === "complete") {
+         setProcessStatus("idle");
+         setProcessProgress(0);
+         setProcessPhase("");
+         setStatsData(null);
+         setError(null);
+         
+         // Clear persisted state
+         if (userId) {
+            localStorage.removeItem(`import_process_status_${userId}`);
+            localStorage.removeItem(`import_process_progress_${userId}`);
+            localStorage.removeItem(`import_process_phase_${userId}`);
+         }
+      }
+   };
    
    const contextValue = {
       processStatus,
@@ -155,7 +186,9 @@ export function ImportProvider({ children }) {
       processPhase,
       statsData,
       error,
+      isUIReady,
       startImport,
+      resetImportState
    };
    
    return (

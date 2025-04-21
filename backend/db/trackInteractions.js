@@ -1,3 +1,4 @@
+const { list } = require('postcss');
 const supabase = require('../../lib/supabaseclient');
 
 // This function is used to instantiate track interactions for each user, is called as we read through the json passed in import page
@@ -132,40 +133,74 @@ async function updateTrackInteraction(userId, trackId, playDuration, skipThresho
 // This function only gets called when doing the import processing. 
 async function calculateMinutesListened(userId, trackId){
 
-   // Fetch the record
-   const { data, error } = await supabase
-      .from('Track Interactions')
-      .select('*')
-      .match({user_id: userId, track_id: trackId})
-      .single();
+   // Fetch the record and settings
+   const [recordResponse, settingsResponse] = await Promise.all([
+      supabase
+         .from('Track Interactions')
+         .select('*')
+         .match({user_id: userId, track_id: trackId})
+         .single(),
+      
+      supabase
+         .from('Settings')
+         .select('skip_threshold')
+         .eq('user_id', userId)
+         .single()
+   ]);
+
+   const { data, error } = recordResponse;
+   const { data: settings, error: settingsError } = settingsResponse;
 
    if( error ){
       return { error };
    }
 
    const playData = data["play_data"]["plays"];
+   const trackDuration = data["track_duration"];
+
+   // Get the skip threshold from settings
+   const skipThreshold = settings["skip_threshold"];
+
 
    // Traverse jsonb adding up all of the ms
    let msListened = 0;
+   let listenCount = 0;
+   let skipCount = 0;
 
    for( var i = 0; i < playData.length; i++ ){
       msListened += playData[i];
+
+      if( trackDuration > 0 ){
+         const percentageListened = (duration/trackDuration) * 100;
+
+         // Determine if it's a skip or a listen based on threshold
+         if( percentageListened >= skipThreshold ){
+            listenCount++;
+         }
+         else{
+            skipCount++;
+         }
+      }
    }
 
    // Convert ms to minutes
    const minutesListened = msListened / (1000*60);
 
    // Update minutes Listened
-   const { data: minuteData, error: updateError } = await supabase
+   const { data: updateData, error: updateError } = await supabase
       .from('Track Interactions')
-      .update({minutes_listened: minutesListened})
+      .update({
+         minutes_listened: minutesListened,
+         listen_count: listenCount,
+         skip_count: skipCount
+      })
       .match({user_id: userId, track_id: trackId});
 
    if( updateError ){
       return { error: updateError };
    }
 
-   return { data: minuteData };
+   return { data: updateData };
 }
 
 // This function is used to recalculate skip and listen counts if the user changes their skip threshold
