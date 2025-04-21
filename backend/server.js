@@ -474,14 +474,14 @@ app.get('/me', async (req,res) => {
 app.get('/me/top/artists', async (req,res) => {
 
    const token = req.headers.authorization?.split(' ')[1];
-
+   const timeRange = req.query.time_range || "short_term";
 
    if(!token){
       return res.status(401).json({error: 'No access token available'});
    }
 
    try{
-      const response = await axios.get('https://api.spotify.com/v1/me/top/artists?limit=5', {
+      const response = await axios.get(`https://api.spotify.com/v1/me/top/artists?limit=5&time_range=${timeRange}`, {
          headers: { Authorization: `Bearer ${token}`}
       });
       res.json(response.data);
@@ -496,14 +496,14 @@ app.get('/me/top/artists', async (req,res) => {
 app.get('/me/top/tracks', async (req,res) => {
 
    const token = req.headers.authorization?.split(' ')[1];
-
+   const timeRange = req.query.time_range || "short_term";
 
    if(!token){
       return res.status(401).json({error: 'No access token available'});
    }
 
    try{
-      const response = await axios.get('https://api.spotify.com/v1/me/top/tracks?limit=5', {
+      const response = await axios.get(`https://api.spotify.com/v1/me/top/tracks?limit=5&time_range=${timeRange}`, {
          headers: { Authorization: `Bearer ${token}`}
       });
       res.json(response.data);
