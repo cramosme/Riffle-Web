@@ -150,7 +150,7 @@ export default function RootLayout({ children }) {
    }, []);
 
    // Wrap the application with SpotifyProvider only if the user is logged in
-   const wrappedChildren = isLoggedIn ? (
+   const wrappedChildren = isLoggedIn && authChecked ? (
       <SpotifyProvider>
          <ImportProvider>
             {children}
