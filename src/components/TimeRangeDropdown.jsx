@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import styles from './TimeRangeDropdown.module.css';
 
+export default function TimeRangeDropdown({ selectedRange, onChange, hasImportedHistory = false }) {
    const [isOpen, setIsOpen] = useState(false);
    const [tooltipVisible, setTooltipVisible] = useState(false);
    
