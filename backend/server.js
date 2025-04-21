@@ -9,11 +9,11 @@ const { upsertTrack } = require('./db/trackInfo');
 const { upsertTrackInteractions,updateTrackInteraction, calculateMinutesListened, recalculateCounts } = require('./db/trackInteractions');
 const { initializeUserSettings, updateUserSettings } = require('./db/userSettings');
 const supabase = require('../lib/supabaseclient');
-const { cache, use } = require('react');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({limit: '50mb'}));
+app.use(express.urlencoded({limit: '50mb', extended: true}));
 
 const clientId = process.env.NEXT_PUBLIC_CLIENT_ID;
 const clientSecret = process.env.CLIENT_SECRET;
@@ -54,7 +54,7 @@ async function getTrackData(trackIds, accessToken) {
          });
 
          // Delay to avoid hitting rate limits
-         if( i + batchSize < trackIds.length ){
+         if( (i / batchSize + 1) % 5 === 0 ){
             await new Promise(resolve => setTimeout(resolve, 100));
          }
       }
@@ -67,14 +67,18 @@ async function getTrackData(trackIds, accessToken) {
 }
 
 // Processing function
-async function processImportInBackground(userId, files) {
+async function processImportInBackground(userId, files, accessToken) {
 
-   const connection = activeConnections.get(userId);
+   let connection = activeConnections.get(userId);
+
+   if( !connection ) {
+      console.log(`No connection found for user ${userId}`);
+      return;
+   }
+
+   console.log(`Starting import processing for user ${userId}`);
 
    try{
-
-      // Get access token from connection
-      const accessToken = connection?.accessToken;
 
       if( !accessToken ){
          throw new Error("Access token not available");
@@ -91,9 +95,15 @@ async function processImportInBackground(userId, files) {
       const uniqueTrackIds = new Set();
       let processedEntries = 0;
       let skippedEntries = 0; // For tracks with no uri (User uploaded tracks)
+      let currentFileIndex = 0;
+      const totalFiles = files.length;
 
       // First need to process all entries and collect track ids
       for( const fileData of files ){
+         currentFileIndex++;
+         console.log(`\n========= Processing file ${currentFileIndex}/${totalFiles}: ${fileData.name} =========`);
+         console.log(`Entries in this file: ${fileData.data.length}`);
+
          const entries = fileData.data; // Array of spotify history entries
 
          // Process each entry
@@ -111,19 +121,22 @@ async function processImportInBackground(userId, files) {
             // Collect unique track ids for fetching the total length of song (not included in json provided by spotify)
             uniqueTrackIds.add(trackId);
 
-            uniqueTracks.add({
+            // Create a track info object with proper structure
+            const trackInfo = {
                userId,
                trackId,
-               msPlayed: entry["ms_played"],
-               trackName: entry["master_metadata_track_name"],
-               artistName: entry["master_metadata_album_artist_name"],
-               albumName: entry["master_metadata_album_album_name"]
-            });
+               msPlayed: entry["ms_played"],  // Directly use the value from entry
+               trackName: entry["master_metadata_track_name"] || "Unknown Track",
+               artistName: entry["master_metadata_album_artist_name"] || "Unknown Artist",
+               albumName: entry["master_metadata_album_album_name"] || "Unknown Album"
+            };
+
+            uniqueTracks.add(trackInfo);
 
             processedEntries++;
 
-            // Update progress every 10 entries or if completed
-            if( processedEntries % 10 === 0 || processedEntries === totalEntries ){
+            // Update progress every entry or if completed
+            if( processedEntries % 1000 === 0 || processedEntries === totalEntries ){
                sendProgressUpdate(connection, {
                   status: "processing",
                   progress: Math.round((processedEntries/totalEntries) * 30), // 30% for first part
@@ -133,6 +146,8 @@ async function processImportInBackground(userId, files) {
                });
             }
          }
+         console.log(`Completed processing file ${currentFileIndex}/${totalFiles}: ${fileData.name}`);
+         console.log(`Processed entries: ${processedEntries}, Skipped entries: ${skippedEntries}`);
       }
 
       // Fetch data from spotify api
@@ -156,45 +171,54 @@ async function processImportInBackground(userId, files) {
       }
 
       // Process all track interactions
-      console.log("Processing track interactions...");
       let interactionCount = 0;
       const totalTracks = trackInteractions.size;
-
-      for( const[trackId, interactions] of trackInteractions ){
+      const batchSize = 50; // Process in batches
+      
+      for await (const [trackId, interactions] of trackInteractions) {
          const firstInteraction = interactions[0];
          const { duration_ms, album_image } = apiTrackData[trackId] || { duration_ms: 0, album_image: null };
-
-         // Track data for table insert
+      
+         // Prepare track data
          const trackData = {
             id: trackId,
-            name: firstInteraction["trackName"],
-            artists: [{ name: firstInteraction["artistName"] }],
-            album: { name: firstInteraction["albumName"], images: album_image ? [{ url:album_image }] : [] }
+            name: firstInteraction.trackName || "Unknown Track",
+            artists: [{ name: firstInteraction.artistName || "Unknown Artist" }],
+            album: { 
+               name: firstInteraction.albumName || "Unknown Album", 
+               images: album_image ? [{ url: album_image }] : [] 
+            }
          };
-
+      
+         // Upsert track
          const { track, error: trackError } = await upsertTrack(trackData);
-
          if( trackError ){
             console.error("Error upserting track:", trackError);
             continue;
          }
-
-         // Process each interaction for this track
+      
+         // Process all interactions for this track
          for( const interaction of interactions ) {
-            const { trackData: interactionData, error: interactionError } = await upsertTrackInteractions(userId, trackId, interaction["ms_played"], duration_ms);
 
+            const { trackData: interactionData, error: interactionError } = await upsertTrackInteractions(
+               userId, 
+               trackId, 
+               interaction.msPlayed || 0, // Ensure msPlayed is valid
+               duration_ms
+            );
+      
             if( interactionError ){
                console.error("Error upserting track interaction:", interactionError);
             }
          }
-
+      
          interactionCount++;
-
-         // Update progress
-         if( interactionCount % 10 === 0 || interactionCount === totalTracks ){
+      
+         // Update progress more frequently
+         if( interactionCount % 100 === 0 || interactionCount === totalTracks ){
             sendProgressUpdate(connection, {
                status: "processing",
-               progress: 50 + Math.round((interactionCount/totalTracks) * 40), // 50-90%
+               progress: 50 + Math.round((interactionCount/totalTracks) * 40),
                phase: "processing_interactions",
                interactionCount,
                totalTracks
@@ -213,7 +237,7 @@ async function processImportInBackground(userId, files) {
             calculatedTracks++;
 
             // Update progress
-            if( calculatedTracks % 10 === 0 || calculatedTracks === totalTrackIds ){
+            if( calculatedTracks % 100 === 0 || calculatedTracks === totalTrackIds ){
                sendProgressUpdate(connection, {
                   status: "processing",
                   progress: 90 + Math.round((calculatedTracks/totalTrackIds) * 10), // Last 10%
@@ -248,9 +272,18 @@ async function processImportInBackground(userId, files) {
 }
 
 // Function to send progress updates
-function sendProgressUpdate(connection, data){
-   if(connection){
-      connection.write(`data: ${JSON.stringify(data)}\n\n`);
+function sendProgressUpdate(connection, data) {
+   
+   if (!connection || !connection.res) {
+      console.log("No active connection for progress update");
+      return;
+   }
+   
+   try {
+      // Write data
+      connection.res.write(`data: ${JSON.stringify(data)}\n\n`);
+   } catch (error) {
+      console.error("Error sending progress update:", error);
    }
 }
 
@@ -544,16 +577,25 @@ app.get('/import-progress/:userId', (req, res) => {
    res.setHeader('Content-Type', 'text/event-stream');
    res.setHeader('Cache-Control', 'no-cache');
    res.setHeader('Connection', 'keep-alive');
+   res.setHeader('X-Accel-Buffering', 'no');
+   res.flushHeaders();
+
+   const connection = {
+      res,
+      accessToken
+   };
 
    // Store connection with access token
-   res.accessToken = accessToken;
-   activeConnections.set(userId, res);
+   activeConnections.set(userId, connection);
+
+   console.log(`Connection established for user ${userId}`);
 
    // Send initial connection message
    res.write('data: {"status": "connected"}\n\n');
 
    req.on('close', () => {
       activeConnections.delete(userId);
+      console.log(`Connection closed for user ${userId}`);
    });
 
 });
@@ -563,6 +605,7 @@ app.post('/import-history/:userId', async (req, res) => {
 
    const userId = req.params.userId;
    const {files} = req.body;
+   const accessToken = req.headers.authorization?.split(' ')[1];
 
    if( !files || !Array.isArray(files) || files.length === 0 ){
       return res.status(400).json({error: "No files provided"});
@@ -574,7 +617,10 @@ app.post('/import-history/:userId', async (req, res) => {
       status: "processing"
    });
 
-   processImportInBackground(userId, files);
+   // Add a delay to allow the client to establish connection
+   setTimeout(() =>{
+      processImportInBackground(userId, files, accessToken);
+   }, 2000);
 });
 
 const PORT = 3000;

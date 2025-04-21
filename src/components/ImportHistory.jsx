@@ -1,75 +1,26 @@
 /* Import logic */
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import styles from "./ImportHistory.module.css";
+import { useImport } from "@/context/ImportContext";
 
 export default function ImportHistory({ userId }) {
+   
+   const {
+      processStatus,
+      processProgress,
+      processPhase,
+      statsData,
+      error,
+      startImport
+   } = useImport();
+
    const [files, setFiles] = useState([]);
    const [isDragging, setIsDragging] = useState(false);
    const [uploadStatus, setUploadStatus] = useState("idle");
-   const [processStatus, setProcessStatus] = useState("idle");
-   const [processProgress, setProcessProgress] = useState(0);
-   const [processPhase, setProcessPhase] = useState("");
-   const [statsData, setStatsData] = useState(null);
-   const [error, setError] = useState(null);
-
-   // Setup connection for progress updates
-   useEffect(() => {
-      let eventSource;
-      
-      if (processStatus === "processing") {
-         const token = localStorage.getItem("access_token");
-         
-         // Create the EventSource with token in query parameter
-         eventSource = new EventSource(`http://localhost:3000/import-progress/${userId}?token=${token}`);
-         
-         eventSource.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            
-            if (data.status === "processing") {
-               setProcessProgress(data.progress);
-               setProcessPhase(data.phase);
-            } else if (data.status === "complete") {
-               setProcessProgress(100);
-               setProcessStatus("complete");
-               // Show stats
-               setStatsData({
-                  totalProcessed: data.totalProcessed,
-                  totalSkipped: data.totalSkipped,
-                  uniqueTracks: data.uniqueTracks
-               });
-               eventSource.close();
-               
-               // Reset after 5 seconds
-               setTimeout(() => {
-                  setFiles([]);
-                  setUploadStatus("idle");
-                  setProcessStatus("idle");
-                  setProcessProgress(0);
-                  setProcessPhase("");
-                  setStatsData(null);
-               }, 5000);
-            } else if (data.status === "error") {
-               setProcessStatus("error");
-               setError(data.error);
-               eventSource.close();
-            }
-         };
-         
-         eventSource.onerror = () => {
-            console.error("SSE connection error");
-            eventSource.close();
-         };
-      }
-      
-      return () => {
-         if (eventSource) {
-            eventSource.close();
-         }
-      };
-   }, [processStatus, userId]);
+   const [uploadError, setUploadError] = useState(null);
 
    const handleDragOver = (e) => {
       e.preventDefault();
@@ -105,11 +56,17 @@ export default function ImportHistory({ userId }) {
       if (files.length === 0) {
          return;
       }
-      
+         
+      if (!userId) {
+         console.error("Cannot upload: userId is not set");
+         return;
+      }
+
       setUploadStatus("uploading");
-      setError(null);
+      setUploadError(null);
       
       try {
+         
          // Read and parse all files
          const fileContents = await Promise.all(
             files.map(file => readFileAsJSON(file))
@@ -128,16 +85,17 @@ export default function ImportHistory({ userId }) {
          });
          
          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Error uploading files");
+            throw new Error("Error uploading files");
          }
          
          setUploadStatus("success");
-         setProcessStatus("processing");
+         
+         // Start connection after successful upload
+         startImport();
          
       } catch (err) {
          console.error("Error uploading files:", err);
-         setError(err.message);
+         setUploadError(err.message);
          setUploadStatus("error");
       }
    };
@@ -149,6 +107,9 @@ export default function ImportHistory({ userId }) {
          reader.onload = (event) => {
             try {
                const content = JSON.parse(event.target.result);
+               if( !Array.isArray(content) ){
+                  throw new Error(`File ${file["name"]} does not contain an array of streaming history`);
+               }
                resolve({
                   name: file.name,
                   data: content
@@ -235,7 +196,7 @@ export default function ImportHistory({ userId }) {
                   </p>
                )}
                
-               {processStatus === "processing" && (
+               {processStatus === "processing" && uploadStatus === "success" && (
                   <div style={{marginTop: "16px"}}>
                      <p style={{marginBottom: "8px"}}>
                         {processPhase === "calculating" 
@@ -267,7 +228,7 @@ export default function ImportHistory({ userId }) {
 
                {(uploadStatus === "error" || processStatus === "error") && (
                   <p style={{ color: "#e74c3c", marginTop: "16px", fontWeight: "bold" }}>
-                     Error: {error || "There was an error processing your files. Please try again."}
+                     Error: {uploadError || error || "There was an error processing your files. Please try again."}
                   </p>
                )}
             </div>

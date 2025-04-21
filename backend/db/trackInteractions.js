@@ -2,7 +2,7 @@ const supabase = require('../../lib/supabaseclient');
 
 // This function is used to instantiate track interactions for each user, is called as we read through the json passed in import page
 async function upsertTrackInteractions(userId, trackId, playDuration, trackDuration){
-   
+
    // First need to see if the record already exists. If it does we can just append the playDuration to the plays array
    const { data: existingRecord, error: fetchError } = await supabase
       .from('Track Interactions')
@@ -18,7 +18,11 @@ async function upsertTrackInteractions(userId, trackId, playDuration, trackDurat
    // If the record exists, append the new play duration
    if( existingRecord ){
       const existingPlayData = existingRecord["play_data"];
-      existingPlayData["plays"].push(playDuration); // Appends new play duration
+      
+      // Ensure we're pushing a number, not null or undefined
+      if (playDuration || playDuration === 0) {
+         existingPlayData["plays"].push(playDuration);
+      }
 
       const updateRecord = {
          play_data: existingPlayData,
@@ -39,7 +43,7 @@ async function upsertTrackInteractions(userId, trackId, playDuration, trackDurat
    /*---If record doesnt exist, create a new one---*/
 
    const playData = {
-      plays: [playDuration],
+      plays: playDuration || playDuration === 0 ? [playDuration] : [],
    };
 
    // Only need to set columns we dont want to have a default value
