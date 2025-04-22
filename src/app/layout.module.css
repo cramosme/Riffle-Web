@@ -12,6 +12,7 @@
    left: 0;
    right: 0;
    padding-left: 25px;
+   z-index: 1000;
 }
 
 .logoContainer {

@@ -6,7 +6,7 @@ const cors = require('cors');  // Allows frontend requests
 /* Database access */
 const { upsertUserProfile } = require('./db/userProfile');
 const { upsertTrack } = require('./db/trackInfo');
-const { upsertTrackInteractions,updateTrackInteraction, calculateMinutesListened, recalculateCounts } = require('./db/trackInteractions');
+const { upsertTrackInteractions,updateTrackInteraction, calculateMinutesListened, recalculateCounts, removeZeroListenedTracks } = require('./db/trackInteractions');
 const { initializeUserSettings, updateUserSettings } = require('./db/userSettings');
 const supabase = require('../lib/supabaseclient');
 
@@ -142,6 +142,7 @@ async function processImportInBackground(userId, files, accessToken) {
 
             // Update progress every entry or if completed
             if( processedEntries % 100 === 0 || processedEntries === totalEntries ){
+               console.log("Process 100 entries...");
                sendProgressUpdate(connection, {
                   status: "processing",
                   progress: Math.round((processedEntries/totalEntries) * 20), // 20% for first part
@@ -237,6 +238,7 @@ async function processImportInBackground(userId, files, accessToken) {
       
          // Update progress more frequently
          if( interactionCount % 100 === 0 || interactionCount === totalTracks ){
+            console.log("Processed 100 tracks...");
             sendProgressUpdate(connection, {
                status: "processing",
                progress: 35 + Math.round((interactionCount/totalTracks) * 50), // Up to 85
@@ -252,7 +254,7 @@ async function processImportInBackground(userId, files, accessToken) {
       setTimeout( ()=> {
          sendProgressUpdate(connection, {
             status: "processing",
-            progress: 85, // Still 85 at the start of the processing phase
+            progress: 85, // Still 85 at the start of the calculating phase
             phase: "calculating"
          });
       }, 2000);
@@ -267,9 +269,10 @@ async function processImportInBackground(userId, files, accessToken) {
 
             // Update progress
             if( calculatedTracks % 100 === 0 || calculatedTracks === totalTrackIds ){
+               console.log("Calculated 100 tracks...");
                sendProgressUpdate(connection, {
                   status: "processing",
-                  progress: 85 + Math.round((calculatedTracks/totalTrackIds) * 15), // Last 15%
+                  progress: 85 + Math.round((calculatedTracks/totalTrackIds) * 10), // 10% for calculating
                   phase: "calculating",
                   calculatedTracks,
                   totalTracks: totalTrackIds
@@ -280,6 +283,25 @@ async function processImportInBackground(userId, files, accessToken) {
             calculatedTracks++;
          }
       }
+
+      // Remove tracks with zero minutes listened
+      console.log("Removing interactions with zero minutes listened...");
+      setTimeout(() => {
+         sendProgressUpdate(connection, {
+            status: "processing",
+            progress: 95, // 95% complete
+            phase: "cleaning_up"
+         });
+      }, 2000);
+
+      const { deleted, count, error: cleanupError } = await removeZeroListenedTracks(userId);
+      
+      if( cleanupError ){
+         console.error("Error cleaning up tracks", cleanupError);
+      } else{
+         console.log(`Removed ${count} tracks with zero minutes listened`);
+      }
+
 
       const endTime = Date.now();
       const endDate = new Date(endTime);

@@ -174,6 +174,7 @@ export default function ImportHistory({ userId }) {
                   {processPhase === "fetching_track_data" && "Fetching track data from Spotify..."}
                   {processPhase === "processing_interactions" && "Processing your listening history..."}
                   {processPhase === "calculating" && "Calculating listening statistics..."}
+                  {processPhase === "cleaning_up" && "Cleaning up the data..."}
                </p>
                
                <div className={styles.progressBarContainer}>

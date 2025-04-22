@@ -16,3 +16,27 @@
    max-width: 42rem;
    text-align: center;
  }
+
+ .featureIcon {
+   /* background-color: beige; */
+   margin-top: 16px;
+   color: #0eaa45;
+ }
+
+ .featureTitle {
+   /* background-color: blue; */
+   padding: 0 10px;
+   font-size: 20px;
+   font-weight: bold;
+   color: white;
+   font-family: 'Lato-Bold', Arial, sans-serif;
+ }
+
+ .featureDesc {
+   /* background-color: blueviolet; */
+   padding: 0 10px;
+   font-size: 20px;
+   font-weight: bold;
+   color: white;
+   font-family: 'Lato-Bold', Arial, sans-serif;
+ }
