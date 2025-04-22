@@ -20,18 +20,6 @@
    max-width: 1152px;
    z-index: 1;
  }
- 
-.profileImage {
-   object-fit: cover;
-   border-radius: 50%;
-}
- 
-.displayName {
-   font-size: 20px;
-   padding: 20px 0;
-   color: white;
-   font-family: 'Lato-Bold', sans-serif;
-}
 
 .sectionTitle {
    font-size: 30px;
@@ -52,21 +40,12 @@
    gap: 16px; /* Add consistent gap between items */
 }
 
-.profileContainer {
-   display: flex;
-   flex-wrap: wrap;
-   flex-direction: column;
-   justify-content: center;
-   align-items: center;
-   margin-top: 30px;
-   margin-left: 10px;
-}
-
 .webPlaybackContainer {
    display: flex;
    flex-wrap: wrap;
-   padding-left: 100px;
-   margin-top: 15px;
+   justify-content: center;
+   align-items: center;
+   width: 100%;
 }
 
  

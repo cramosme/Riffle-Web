@@ -20,6 +20,7 @@ export default function RootLayout({ children }) {
    const [isLoggedIn, setIsLoggedIn] = useState(false);
    const [userId, setUserId] = useState(null);
    const [profileImage, setProfileImage] = useState(null);
+   const [userName, setUserName] = useState(null);
 
    // Function to check access token and refresh token if needed
    const checkAndRefreshToken = async () => {
@@ -73,6 +74,7 @@ export default function RootLayout({ children }) {
                setIsLoggedIn(false);
                setUserId(null);
                setProfileImage(null);
+               setUserName(null);
 
             }
          }
@@ -87,6 +89,7 @@ export default function RootLayout({ children }) {
          setIsLoggedIn(false);
          setUserId(null);
          setProfileImage(null);
+         setUserName(null);
       }
    }
 
@@ -130,8 +133,11 @@ export default function RootLayout({ children }) {
             if (loggedIn) {
                const storedUserId = getLoggedInUserId();
                const storedProfilePic = localStorage.getItem('profile_pic');
+               const storedUserName = localStorage.getItem("display_name");
+
                setUserId(storedUserId);
                setProfileImage(storedProfilePic);
+               setUserName(storedUserName || "");
                // Log token expiry information
                logTokenExpiry();
             }
@@ -186,62 +192,12 @@ export default function RootLayout({ children }) {
                
                {/* Navigation links or auth button on the right */}
                <div className={styles.navContainer}>
-                  {isIndexRoute && authChecked && ( isLoggedIn ? (
-                     <ProfileDropdown userId={userId} profileImageUrl={profileImage} />
+                  {authChecked && isLoggedIn ? (
+                     <ProfileDropdown userId={userId} profileImageUrl={profileImage} userName={userName} />
                   ) : (
-                     <SpotifyAuthWithPKCE/>
-                  )
-                  )}
-                  
-                  {isStatsRoute && (
-                     <>
-                        <Link
-                           href={`/import/${userId}`}
-                           className={styles.navLink}
-                        >
-                           Import
-                        </Link>
-                        <Link 
-                           href={`/settings/${userId}`} 
-                           className={styles.navLink}
-                        >
-                           Settings
-                        </Link>
-                     </>
-                  )}
-                  
-                  {isSettingsRoute && (
-                     <>
-                        <Link
-                           href={`/import/${userId}`}
-                           className={styles.navLink}
-                           >
-                           Import
-                        </Link>
-                        <Link 
-                           href={`/stats/${userId}`} 
-                           className={styles.navLink}
-                        >
-                           Stats
-                        </Link>
-                     </>
-                  )}
-
-                  {isImportRoute && (
-                     <>
-                        <Link
-                           href={`/stats/${userId}`}
-                           className={styles.navLink}
-                        >
-                           Stats
-                        </Link>
-                        <Link
-                           href={`/settings/${userId}`}
-                           className={styles.navLink}
-                        >
-                           Settings
-                        </Link>
-                     </>
+                     authChecked && !isLoggedIn && isIndexRoute && (
+                        <SpotifyAuthWithPKCE/>
+                     )
                   )}
                </div>
             </header>
