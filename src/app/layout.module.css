@@ -26,7 +26,7 @@
 
 .logoText {
    padding: 0 10px;
-   font-size: 25px;
+   font-size: 24px;
    font-weight: bold;
    color: white;
    font-family: 'Lato-Bold', Arial, sans-serif;
@@ -38,21 +38,6 @@
 
 .navContainer {
    margin-right: 40px;
-}
-
-.navLink {
-   margin-right: 40px;
-   font-size: 25px;
-   font-weight: bold;
-   color: white;
-   font-family: 'Lato-Bold', Arial, sans-serif;
-   text-decoration: none;
-   display: inline-block;
-   text-align: center;
-   min-width: 100px;
-}
-.navLink:hover {
-   color:#0eaa45;
 }
 
 .html {

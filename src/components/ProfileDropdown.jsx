@@ -8,13 +8,13 @@ import Link from 'next/link';
 import styles from './ProfileDropdown.module.css';
 import defaultImage from '../../public/images/default_image.png'
 
-export default function ProfileDropdown({ userId, profileImageUrl }) {
+export default function ProfileDropdown({ userId, profileImageUrl, userName }) {
    const [isOpen, setIsOpen] = useState(false);
    const dropdownRef = useRef(null);
    
    // Default profile image if none is provided
    const imageUrl = profileImageUrl || defaultImage;
-   
+
    // Toggle dropdown state
    const toggleDropdown = () => {
       setIsOpen(!isOpen);
@@ -42,13 +42,14 @@ export default function ProfileDropdown({ userId, profileImageUrl }) {
   return (
     <div className={styles.container} ref={dropdownRef}>
       <button className={styles.profileButton} onClick={toggleDropdown}>
-        <Image 
-          src={imageUrl}
-          alt="Profile"
-          width={40}
-          height={40}
-          className={styles.profileImage}
-        />
+         <span className={styles.userName}>{userName}</span>
+         <Image 
+            src={imageUrl}
+            alt="Profile"
+            width={50}
+            height={50}
+            className={styles.profileImage}
+         />
       </button>
       
       {isOpen && (

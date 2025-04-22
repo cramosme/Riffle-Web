@@ -75,10 +75,12 @@ export default function Callback() {
                const userData = await userResponse.json();
                const userId = userData['id'];
                const profile_pic = userData['images'][0]['url'];
+               const display_name = userData["display_name"];
 
                // Store the id in local storage
                localStorage.setItem("user_id", userId);
                localStorage.setItem("profile_pic", profile_pic);
+               localStorage.setItem("display_name", display_name);
 
                // Redirect to stats page
                router.replace(`/stats/${userId}`);

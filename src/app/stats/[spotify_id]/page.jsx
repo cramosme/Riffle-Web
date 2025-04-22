@@ -123,26 +123,12 @@ export default function Stats() {
    return (
       <div className={styles.container}>
          <div className={styles.contentWrapper}>
-         {profileData && artistData && trackData && (
+         {artistData && trackData && (
             <div className={styles.contentWrapper}>
                <div className={styles.cardContainer}>
-               <div className={styles.profileContainer}>
-               {profileData['images'] && profileData['images'][0] && (
-                  <Image 
-                  src={profileData['images'][0]['url']} 
-                  alt="Profile" 
-                  width={ 160 } 
-                  height={ 160 }
-                  className={styles.profileImage}
-                  />
-               )}
-               <p className={styles.displayName}>
-               {profileData['display_name']}
-               </p>
-               </div>
-               <div className={styles.webPlaybackContainer}>
-                  {token && profileData ? <WebPlayback token={token}/> : null}
-               </div>
+                  <div className={styles.webPlaybackContainer}>
+                     {token && profileData ? <WebPlayback token={token}/> : null}
+                  </div>
                </div>
                
 
