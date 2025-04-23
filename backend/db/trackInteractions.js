@@ -169,6 +169,8 @@ async function calculateMinutesListened(userId, trackId){
 
    for( var i = 0; i < playData.length; i++ ){
       msListened += playData[i];
+      
+      const duration = playData[i];
 
       if( trackDuration > 0 ){
          const percentageListened = (duration/trackDuration) * 100;
@@ -274,4 +276,44 @@ async function recalculateCounts(userId, newThreshold) {
    };
 }
 
-module.exports = { upsertTrackInteractions, updateTrackInteraction, calculateMinutesListened, recalculateCounts };
+// Function that will help cleanup tracks with no useful information
+async function removeZeroListenedTracks(userId) {
+   try{
+
+      // Count how many records will be removed
+      const { count, error: countError } = await supabase
+         .from('Track Interactions')
+         .select('*', { count: 'exact', head: true })
+         .eq('user_id', userId)
+         .eq('minutes_listened', 0);
+
+      if (countError) {
+         console.error("Error counting zero-listened tracks:", countError);
+         return { error: countError };
+      }
+
+      console.log(`Found ${count} tracks with zero minutes listened`);
+
+
+      // Delete records with zero minutes listened
+      const { data, error } = await supabase
+         .from("Track Interactions")
+         .delete()
+         .eq("user_id", userId)
+         .eq("minutes_listened", 0)
+         .select();
+
+      if( error ){
+         console.error("Error deleting tracks");
+         return { error };
+      }
+ 
+      return { deleted: data || [], count: count || 0 };
+
+   } catch (error){
+      console.error("Error removing zero listened tracks");
+      return { error };
+   }
+}
+
+module.exports = { upsertTrackInteractions, updateTrackInteraction, calculateMinutesListened, recalculateCounts, removeZeroListenedTracks };
