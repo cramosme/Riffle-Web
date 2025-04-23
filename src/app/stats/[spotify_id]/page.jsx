@@ -5,6 +5,7 @@ import Image from 'next/image';
 import styles from './page.module.css';
 import WebPlayback from '@/components/WebPlayback';
 import TimeRangeDropdown from '@/components/TimeRangeDropdown';
+import SortingDropdown from '@/components/SortingDropdown';
 
 export default function Stats() {
    const [profileData, setProfileData] = useState(null);
@@ -12,6 +13,7 @@ export default function Stats() {
    const [trackData, setTrackData] = useState(null);
    const [token, setToken] = useState(null);
    const [timeRange, setTimeRange] = useState("short_term");
+   const [sortMethod, setSortMethod] = useState("count");
    const [hasImportedHistory, setHasImportedHistory] = useState(false);
 
    const formatNumberWithCommas = (number) => {
@@ -120,6 +122,16 @@ export default function Stats() {
       setTimeRange(newRange);
    }
 
+   // Handle sorting change
+   const handleSortingChange = (newSort) => {
+      setSortMethod(newSort);
+   }
+
+   // Handle user selecting top track to fill in web playback
+   // const handlePlayTrack = (track) => {
+
+   // }
+
    return (
       <div className={styles.container}>
          <div className={styles.contentWrapper}>
@@ -132,8 +144,13 @@ export default function Stats() {
                </div>
                
 
-               
-               <div className={styles.timeRangeContainer}>
+               <div className={styles.dropdownContainer}>
+                  {/* {timeRange === "Lifetime" && ( */}
+                     <SortingDropdown
+                        selectedRange={sortMethod}
+                        onChange={handleSortingChange}
+                     />
+                  {/* )} */}
                   <TimeRangeDropdown
                      selectedRange={timeRange}
                      onChange={handleTimeRangeChange}

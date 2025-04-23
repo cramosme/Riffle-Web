@@ -712,6 +712,99 @@ app.get('/user/import-status/:userId', async (req, res) => {
    }
 });
 
+// Endpoint to get track statistics for a specific user and track
+app.get('/track-stats/:userId/:trackId', async (req, res) => {
+
+   const { userId, trackId } = req.params;
+
+   try {
+      const { data, error } = await supabase
+         .from('Track Interactions')
+         .select('*')
+         .match({ user_id: userId, track_id: trackId })
+         .single();
+        
+      if (error && error.code !== 'PGRST116') {
+         console.error('Error fetching track stats:', error);
+         return res.status(500).json({ error: 'Failed to fetch track statistics' });
+      }
+      
+      // If no record exists yet, return default stats
+      if (!data) {
+         return res.json({ 
+            isFirstPlay: true,
+            listenCount: 0,
+            skipCount: 0,
+            minutesListened: 0,
+            rank: null // Will implement rank later
+         });
+      }
+      
+      // Return the statistics
+      res.json({
+         isFirstPlay: data["listen_count"] === 0 && data["skip_count"] === 0,
+         listenCount: data["listen_count"],
+         skipCount: data["skip_count"],
+         minutesListened: data["minutes_listened"],
+         playData: data["play_data"],
+         rank: null // Will implement rank later
+      });
+   } catch (error) {
+      console.error('Error in track stats endpoint:', error);
+      res.status(500).json({ error: 'Internal server error' });
+   }
+});
+
+// Endpoint to update track interaction when a song is played/skipped
+app.post('/track-interaction/:userId/:trackId', async (req, res) => {
+   const { userId, trackId } = req.params;
+   const { playDuration, trackDuration } = req.body;
+      
+   if (!playDuration || !trackDuration) {
+      return res.status(400).json({ error: 'Missing required fields' });
+   }
+      
+   try {
+      // First, get the user's skip threshold
+      const { data: settings, error: settingsError } = await supabase
+         .from('Settings')
+         .select('skip_threshold')
+         .eq('user_id', userId)
+         .single();
+         
+      if (settingsError) {
+         console.error('Error fetching user settings:', settingsError);
+         return res.status(500).json({ error: 'Failed to fetch user settings' });
+      }
+      
+      const skipThreshold = settings["skip_threshold"] || 20; // Default to 20 if not set
+      
+      // Update the track interaction
+      const { data, error } = await updateTrackInteraction(
+         userId, 
+         trackId, 
+         playDuration, 
+         skipThreshold,
+         trackDuration
+      );
+      
+      if (error) {
+         console.error('Error updating track interaction:', error);
+         return res.status(500).json({ error: 'Failed to update track interaction' });
+      }
+      
+      // Return the updated interaction data
+      res.json({ 
+         success: true,
+         interaction: data 
+      });
+      
+   } catch (error) {
+      console.error('Error in track interaction endpoint:', error);
+      res.status(500).json({ error: 'Internal server error' });
+   }
+});
+
 const PORT = 3000;
 app.listen(PORT, () => {
    console.log(`Server running on http://localhost:${PORT}`);

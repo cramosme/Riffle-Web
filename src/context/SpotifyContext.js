@@ -28,6 +28,9 @@ export function SpotifyProvider({ children }) {
    // Refs to track state
    const scriptInjected = useRef(false);
    const reconnectAttempted = useRef(false);
+   const lastTrackId = useRef(null);
+   const lastPosition = useRef(0);
+   const trackDuration = useRef(0);
    
    // Get token from localStorage
    const getToken = () => {
@@ -102,9 +105,27 @@ export function SpotifyProvider({ children }) {
       spotifyPlayer.addListener('player_state_changed', state => {
          if (!state) return;
          
+         // Get current state details
+         const trackId = state.track_window.current_track.id;
+         const position = state.position;
+         const duration = state.duration;
+         const isPaused = state.paused;
+
+         // Track changed
+         if( lastTrackId.current && lastTrackId.current !== trackId ){
+            const playDuration = lastPosition.current;
+            recordTrackInteraction(lastTrackId.current, playDuration, trackDuration.current);
+            console.log(`Track changed. Recorded ${playDuration}ms played for previous track.`);
+         }
+         
          // Set state with current track info
          setCurrentTrack(state.track_window.current_track);
          setIsPaused(state.paused);
+         trackDuration.current = duration;
+
+         // Update tracking refs
+         lastTrackId.current = trackId;
+         lastPosition.current = position;
          
          spotifyPlayer.getCurrentState().then(state => {
             if (!state) {
@@ -158,6 +179,46 @@ export function SpotifyProvider({ children }) {
          });
    };
    
+   // Record track interaction with the backend
+   const recordTrackInteraction = async (trackId, playDuration, trackDuration) => {
+      if( !trackId || !trackDuration ){
+         console.log('Missing required data for recording track interaction');
+         return; 
+      }
+      try {
+         const userId = localStorage.getItem('user_id');
+         const token = getToken();
+         
+         if (!userId || !token) {
+            console.error('User ID or token missing');
+            return;
+         }
+         
+         console.log(`Recording interaction for track ${trackId}: ${playDuration}ms played out of ${trackDuration}ms`);
+
+         const response = await fetch(`http://localhost:3000/track-interaction/${userId}/${trackId}`, {
+            method: 'POST',
+            headers: {
+               'Content-Type': 'application/json',
+               'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+               playDuration,
+               trackDuration
+            })
+         });
+         
+         if (!response.ok) {
+            throw new Error('Failed to record track interaction');
+         }
+         
+         const data = await response.json();
+         console.log('Track interaction recorded:', data);
+      } catch (error) {
+         console.error('Error recording track interaction:', error);
+      }
+   };
+   
    // Check current playback status, important when navigating back to stats page
    const checkCurrentPlayback = async (device_id, token) => {
       if (!token || !device_id) return;
@@ -190,6 +251,11 @@ export function SpotifyProvider({ children }) {
                if (data?.item) {
                   setCurrentTrack(data.item);
                   setIsPaused(!data.is_playing);
+                  
+                  // Set current track info for tracking
+                  lastTrackId.current = data.item.id;
+                  lastPosition.current = data.progress_ms || 0;
+                  trackDuration.current = data.item.duration_ms || 0;
                }
             }
          }
@@ -290,6 +356,11 @@ export function SpotifyProvider({ children }) {
                      setIsActive(true);
                      setCurrentTrack(state.track_window.current_track);
                      setIsPaused(state.paused);
+                     
+                     // Initialize tracking for this track
+                     lastTrackId.current = state.track_window.current_track.id;
+                     lastPosition.current = state.position;
+                     trackDuration.current = state.duration;
                   }
                });
             }
@@ -301,9 +372,57 @@ export function SpotifyProvider({ children }) {
       }
    };
    
+   // Clean up event handling for track interactions when component unmounts
+   useEffect(() => {
+      return () => {
+         // If we have a current track playing, record the interaction
+         if (lastTrackId.current && lastPosition.current && trackDuration.current) {
+            recordTrackInteraction(lastTrackId.current, playDuration, trackDuration.current);
+            console.log(`Component unmounting. Recorded final play duration for current track.`);
+         }
+      };
+   }, []);
+
+   // Get current state including position
+   const getCurrentState = async () => {
+      if( player ){
+         const state = await player.getCurrentState();
+         if( state ){
+            // Update position
+            lastPosition.current = state.position;
+            return state;
+         }
+      }
+      return null;
+   }
+
+   // Set up polling to update position periodically
+   useEffect(() => {
+      const pollInterval = setInterval(async () => {
+         if (isActive && !isPaused) {
+            const state = await getCurrentState();
+            if (state) {
+               // This updates lastPosition.current inside getCurrentState
+               console.log(`Current position: ${lastPosition.current}ms`);
+            }
+         }
+      }, 5000); // Poll every 5 seconds
+      
+      return () => clearInterval(pollInterval);
+   }, [isActive, isPaused]);
+
    // Player control functions
    const handlePreviousTrack = () => {
       if (player && isReady) {
+         // Record current track interaction before skipping
+         if (lastTrackId.current && lastPosition.current && trackDuration.current) {
+            recordTrackInteraction(lastTrackId.current, lastPosition.current, trackDuration.current);
+            console.log(`Previous button clicked. Recorded ${lastPosition.current}ms for current track.`);
+            
+            // Reset position since we're changing tracks
+            lastPosition.current = 0;
+         }
+         
          player.previousTrack().catch(err => {
             console.error("Error skipping to previous track:", err);
          });
@@ -320,6 +439,15 @@ export function SpotifyProvider({ children }) {
 
    const handleNextTrack = () => {
       if (player && isReady) {
+         // Record current track interaction before skipping
+         if (lastTrackId.current && lastPosition.current && trackDuration.current) {
+            recordTrackInteraction(lastTrackId.current, lastPosition.current, trackDuration.current);
+            console.log(`Next button clicked. Recorded ${lastPosition.current}ms for current track.`);
+            
+            // Reset position since we're changing tracks
+            lastPosition.current = 0;
+         }
+         
          player.nextTrack().catch(err => {
             console.error("Error skipping to next track:", err);
          });
