@@ -1,122 +1,223 @@
-/* Styles for web playback */
+/* Simplified styles for web playback */
 
-.mainWrapper {
-   align-items: center;
+.playerContainer {
    display: flex;
-   flex-direction: column;
-   justify-content: center;
-   width: 100%;
-   max-width: 710px;
- }
- 
- .trackInfo {
-   display: flex;
-   flex-direction: row;
-   align-items: center;
-   width: 100%;
-   margin-bottom: 20px;
-   justify-content: center;
-   /* background-color: burlywood; */
- }
+   width: 710px;
+   height: 250px;
+   justify-content: space-between;
+   padding: 20px;
+   border-radius: 12px;
+}
 
- .albumColumn {
+/* Album image and controls */
+.albumSection {
    display: flex;
    flex-direction: column;
    align-items: center;
+   justify-content: space-between;
    width: 150px;
-   margin-right: 16px;
-   margin-left: 141px;
-   /* background-color: blueviolet; */
- }
+}
 
- .container {
-   display: flex;
-   gap: 10px;
-   justify-content: flex-start;
-   padding-left: 25px;
-   width: 100%;
-   /* background-color: aqua; */
- }
-
- .buttonContainer {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: auto;
-    min-width: 250px;
-    border: none;
-    background-color: #0eaa45;
-    border-radius: 15px;
-    padding: 12px 20px;
-    display: flex;
-    font-size: 20px;
-    font-family: "Lato-Bold", sans-serif;
-    color: #fff;
-    cursor: pointer;
-    transition: background-color 0.2s;
- }
-
- .coverContainer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  padding: 20px;
-  /* background-color: #952e2e; */
- }
- 
- .mainContainer {
-   flex: 1;
- }
- 
- .nowPlayingName {
-   font-size: 16px;
-   margin-bottom: 8px;
-   width: 100%;
- }
- 
- .nowPlayingArtist {
-   font-size: 24px;
-   margin-bottom: 8px;
-   width: 100%;
- }
- 
- .nowPLayingStatus {
-   margin-bottom: 16px;
- }
- 
- .nowPlayingCover {
-   border-radius: 8px;
+.albumCover {
    width: 150px;
    height: 150px;
- }
- 
- .nowPlayingSide {
+   border-radius: 8px;
+   object-fit: cover;
+   margin-bottom: 15px;
+}
+
+.controls {
+   display: flex;
+   justify-content: center;
+   gap: 8px;
+   width: 100%;
+}
+
+.controlButton {
+   background-color: #0eaa45;
+   border: none;
+   border-radius: 20px;
+   color: white;
+   padding: 6px 10px;
+   font-family: "Lato-Bold", sans-serif;
+   font-size: 12px;
+   cursor: pointer;
+   min-width: 70px;
+   min-height: 40px;
+   display: flex;
+   justify-content: center;
+   align-items: center;
+}
+
+/* Track info section */
+.infoContainer {
+   width: 310px;
    display: flex;
    flex-direction: column;
-   align-items: flex-start;
-   word-break: break-word;
-   word-wrap: break-word;
-   width: 100%;
-   /* background-color: rgb(26, 121, 89); */
- }
- 
- .btnSpotify {
-   background-color: #0eaa45;
-   border-radius:28px;
-   border:1px solid #0eaa45;
-   display:inline-block;
-   cursor:pointer;
-   color:#ffffff;
+   justify-content: flex-start;
+   margin: 0 20px;
+}
+
+.trackDetails {
+   overflow: hidden;
+}
+
+.artistName {
+   font-size: 20px;
+   margin-bottom: 8px;
+   white-space: nowrap;
+   overflow: hidden;
+   text-overflow: ellipsis;
+   color: white;
+   font-family: 'Lato-Bold', sans-serif;
+}
+
+.trackName {
+   font-size: 16px;
+   margin-bottom: 8px;
+   white-space: nowrap;
+   overflow: hidden;
+   text-overflow: ellipsis;
+   color: white;
+   font-family: 'Lato-Bold', sans-serif;
+}
+
+/* Reserved space for future progress bar */
+.progressSpace {
+   height: 40px;
+   margin-top: auto;
+}
+
+/* Stats section */
+.statsContainer {
+   width: 180px;
+   border-left: 1px solid rgba(255, 255, 255, 0.1);
+   padding-left: 15px;
+   display: flex;
+   flex-direction: column;
+   justify-content: center;
+}
+
+.statsRow {
+   display: flex;
+   flex-direction: column;
+   gap: 8px;
+   margin-bottom: 8px;
+}
+
+.statItem {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   background-color: rgba(255, 255, 255, 0.1);
+   padding: 6px 10px;
+   border-radius: 4px;
+}
+
+.statLabel {
+   font-size: 12px;
+   color: #ccc;
    font-family: "Lato-Bold", sans-serif;
-   font-size:17px;
-   padding:16px 31px;
-   text-decoration:none;
-   text-shadow:0px 1px 0px #2f6627;
-   min-width: 120px;
- }
- .btnSpotify:active {
-   position:relative;
-   top: 1px;
- }
- 
+}
+
+.statValue {
+   font-size: 14px;
+   font-weight: bold;
+   color: white;
+   font-family: "Lato-Bold", sans-serif;
+   position: relative;
+}
+
+.rankTooltip {
+   position: absolute;
+   top: -30px;
+   left: 50%;
+   transform: translateX(-50%);
+   background-color: rgba(26, 26, 26, 0.9);
+   color: white;
+   font-size: 12px;
+   padding: 4px 8px;
+   border-radius: 4px;
+   white-space: nowrap;
+   opacity: 0;
+   visibility: hidden;
+   transition: opacity 0.2s, visibility 0.2s;
+   z-index: 10;
+   font-weight: normal;
+   pointer-events: none;
+}
+
+.rankTooltip::after {
+   content: '';
+   position: absolute;
+   top: 100%;
+   left: 50%;
+   margin-left: -5px;
+   border-width: 5px;
+   border-style: solid;
+   border-color: rgba(26, 26, 26, 0.9);
+}
+
+.statValue:hover .rankTooltip {
+   opacity: 1;
+   visibility: visible;
+}
+
+.firstPlay {
+   font-size: 16px;
+   color: #0eaa45;
+   font-weight: bold;
+   text-align: center;
+   padding: 10px;
+   background-color: rgba(70, 0, 0, 0.5);
+   border-radius: 4px;
+}
+
+/* Loading and error states */
+.loadingContainer, .buttonContainer {
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   width: 250px;
+   height: 50px;
+   background-color: #0eaa45;
+   border-radius: 15px;
+   color: white;
+   font-family: "Lato-Bold", sans-serif;
+   font-size: 16px;
+   cursor: pointer;
+}
+
+.loadingStats {
+   font-size: 12px;
+   color: #999;
+   font-style: italic;
+   text-align: center;
+}
+
+.statsError {
+   font-size: 12px;
+   color: #e74c3c;
+   text-align: center;
+}
+
+.errorContainer {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   padding: 15px;
+   background-color: rgba(231, 76, 60, 0.1);
+   border-radius: 8px;
+   color: white;
+}
+
+.retryButton {
+   margin-top: 10px;
+   background-color: #0eaa45;
+   border: none;
+   border-radius: 4px;
+   padding: 6px 12px;
+   color: white;
+   cursor: pointer;
+   font-family: "Lato-Bold", sans-serif;
+}
