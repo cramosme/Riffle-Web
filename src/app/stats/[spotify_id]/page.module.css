@@ -35,7 +35,11 @@
    align-items: flex-start;
    padding: 32px;
    background-color: #1a1a1a;
-   border: 5px solid #0eaa45;
+   border: 5px solid;
+   border-top-color: #0eaa45;
+   border-left-color: #0eaa45;
+   border-right-color: #0a7434;
+   border-bottom-color: #0a7434;
    border-radius: 10px;
    gap: 16px; /* Add consistent gap between items */
 }
@@ -98,7 +102,7 @@
 
  .dropdownContainer {
    display: flex;
-   justify-content: flex-end;
+   justify-content: center;
    width: 100%;
    margin-top: 100px;
    margin-bottom: 40px;

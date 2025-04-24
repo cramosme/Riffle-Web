@@ -351,45 +351,6 @@ function sendProgressUpdate(connection, data) {
    }
 }
 
-// Separate function to process tracks in the background
-async function processUserTracks(userId, accessToken) {
-   try {
-      // Fetch the user's Top 50 tracks using the access token
-      const tracksResponse = await axios.get('https://api.spotify.com/v1/me/top/tracks?time_range=short_term&limit=50', {
-         headers: { Authorization: `Bearer ${accessToken}` }
-      });
-      const topTracks = tracksResponse['data']['items'];
-      
-      // Reset previous track rankings from previous login to get new up-to-date rankings
-      const { error: resetError } = await resetPreviousTopTracks(userId);
-      if (resetError) {
-         console.error('Error resetting track rankings:', resetError);
-      }
-      
-      // Process tracks in batches instead of all at once, helps manage database load
-      const batchSize = 10;
-      for (let i = 0; i < topTracks.length; i += batchSize) {
-         const batch = topTracks.slice(i, i + batchSize);
-         
-         await Promise.all(
-            batch.map(async (trackData, batchIndex) => {
-               const index = i + batchIndex;
-               const tracks = await upsertTrack(trackData);
-               const interactions = await upsertTrackInteractions(userId, trackData['id'], index + 1);
-               return { tracks, interactions };
-            })
-         );
-         
-         console.log(`Processed tracks ${i + 1} to ${Math.min(i + batchSize, topTracks.length)}`);
-      }
-      
-      console.log('All tracks processed successfully.');
-   } catch (error) {
-      console.error('Error processing tracks:', error);
-   }
-}
-
-
 /*------Endpoints------*/
 
 /* Store token and instantiate all user related data */
@@ -479,11 +440,6 @@ app.get('/me', async (req,res) => {
       });
       const userId = response["data"]["id"];
 
-      // Have to call this here since user might not always login, this takes care of users who are still logged in from previous session
-      // processUserTracks(userId, token).catch(err => {
-      //    console.error("Error processing tracks:", err);
-      // })
-
       res.json(response.data);
    }
    catch(error){
@@ -503,7 +459,7 @@ app.get('/me/top/artists', async (req,res) => {
    }
 
    try{
-      const response = await axios.get(`https://api.spotify.com/v1/me/top/artists?limit=5&time_range=${timeRange}`, {
+      const response = await axios.get(`https://api.spotify.com/v1/me/top/artists?limit=50&time_range=${timeRange}`, {
          headers: { Authorization: `Bearer ${token}`}
       });
       res.json(response.data);
@@ -525,7 +481,7 @@ app.get('/me/top/tracks', async (req,res) => {
    }
 
    try{
-      const response = await axios.get(`https://api.spotify.com/v1/me/top/tracks?limit=5&time_range=${timeRange}`, {
+      const response = await axios.get(`https://api.spotify.com/v1/me/top/tracks?limit=50&time_range=${timeRange}`, {
          headers: { Authorization: `Bearer ${token}`}
       });
       res.json(response.data);
@@ -747,6 +703,7 @@ app.get('/track-stats/:userId/:trackId', async (req, res) => {
          skipCount: data["skip_count"],
          minutesListened: data["minutes_listened"],
          playData: data["play_data"],
+         trackDuration: data["track_duration"],
          rank: null // Will implement rank later
       });
    } catch (error) {

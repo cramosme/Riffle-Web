@@ -24,6 +24,7 @@ export function SpotifyProvider({ children }) {
    const [deviceId, setDeviceId] = useState('');
    const [currentTrack, setCurrentTrack] = useState(defaultTrack);
    const [error, setError] = useState(null);
+   const [position, setPosition] = useState("");
    
    // Refs to track state
    const scriptInjected = useRef(false);
@@ -403,10 +404,11 @@ export function SpotifyProvider({ children }) {
             const state = await getCurrentState();
             if (state) {
                // This updates lastPosition.current inside getCurrentState
+               setPosition(lastPosition.current);
                console.log(`Current position: ${lastPosition.current}ms`);
             }
          }
-      }, 5000); // Poll every 5 seconds
+      }, 500); // Poll every 100 ms
       
       return () => clearInterval(pollInterval);
    }, [isActive, isPaused]);
@@ -463,6 +465,7 @@ export function SpotifyProvider({ children }) {
       currentTrack,
       deviceId,
       error,
+      position,
       
       // Player controls
       transferPlayback,
