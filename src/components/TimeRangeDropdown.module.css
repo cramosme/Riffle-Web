@@ -13,12 +13,15 @@
    width: 100%;
    padding: 8px 12px;
    background-color: #1a1a1a;
+   border-top-color: #0c8a3e;
+   border-left-color: #0c8a3e;
+   border-right-color: #0eaa45;
+   border-bottom-color: #0eaa45;
    border-radius: 8px;
    color: white;
    font-family: 'Lato-Bold', sans-serif;
    font-size: 14px;
    cursor: pointer;
-   transition: background-color 0.2s, border-color 0.2s;
  }
  
  .selector:hover {
@@ -51,7 +54,6 @@
    font-family: 'Lato-Bold', sans-serif;
    font-size: 14px;
    cursor: pointer;
-   transition: background-color 0.2s;
    display: flex;
    align-items: center;
    justify-content: space-between;

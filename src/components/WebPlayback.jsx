@@ -10,6 +10,24 @@ function WebPlayback() {
    const [isLoadingStats, setIsLoadingStats] = useState(false);
    const [statsError, setStatsError] = useState(null);
    const [currentTrackId, setCurrentTrackId] = useState(null);
+
+   function formatTime(seconds){
+      // Have to use isNaN bc i set the state to "" not a number
+      if(isNaN(seconds) || seconds < 0) return "0:00";
+      const msToSeconds = seconds/1000;
+      const minutes = Math.floor(msToSeconds/60);
+      const remainingSeconds = Math.round(msToSeconds%60);
+
+      // If it rounds to 60 we need to change display
+      if( remainingSeconds == 60 ){
+         return`${minutes+1}:00`;
+      }
+
+      // Pad seconds with a leading 0 if less than 10
+      const paddedSeconds = remainingSeconds < 10 ? `0${remainingSeconds}` : remainingSeconds;
+
+      return `${minutes}:${paddedSeconds}`;
+   }
    
    try{
       const { 
@@ -18,6 +36,7 @@ function WebPlayback() {
          isPaused,
          currentTrack,
          error,
+         position,
          transferPlayback,
          handlePreviousTrack, 
          handleTogglePlay,
@@ -182,7 +201,18 @@ function WebPlayback() {
                </div>
                
                {/* Space for future progress bar */}
-               <div className={styles.progressSpace}></div>
+               <div className={styles.progressSpace}>
+                  <div className={styles.progressBarContainer}>
+                     <div 
+                        className={styles.progressBar} 
+                        style={{width: `${(position/trackStats.trackDuration)*100}%`}}
+                     />   
+                  </div>
+                  <div className={styles.progressTimeContainer}>
+                     <span>{formatTime(position)}</span>
+                     <span>{formatTime(trackStats.trackDuration)}</span>
+                  </div>
+               </div>
             </div>
             
             {/* Right section: Track stats */}

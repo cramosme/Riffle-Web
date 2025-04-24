@@ -6,6 +6,7 @@ import styles from './page.module.css';
 import WebPlayback from '@/components/WebPlayback';
 import TimeRangeDropdown from '@/components/TimeRangeDropdown';
 import SortingDropdown from '@/components/SortingDropdown';
+import showAllButton from '@/components/showAllButton';
 
 export default function Stats() {
    const [profileData, setProfileData] = useState(null);
@@ -15,6 +16,8 @@ export default function Stats() {
    const [timeRange, setTimeRange] = useState("short_term");
    const [sortMethod, setSortMethod] = useState("count");
    const [hasImportedHistory, setHasImportedHistory] = useState(false);
+   const [showAllArtists, setShowAllArtists] = useState(false);
+   const [showAllTracks, setShowAllTracks] = useState(false);
 
    const formatNumberWithCommas = (number) => {
       return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -127,6 +130,14 @@ export default function Stats() {
       setSortMethod(newSort);
    }
 
+   const handleShowAllArtistsChange = (showAllArtists) => {
+      setShowAllArtists(showAllArtists);
+   }
+
+   const handleShowAllTracksChange = (showAllTracks) => {
+      setShowAllTracks(showAllTracks);
+   }
+
    // Handle user selecting top track to fill in web playback
    // const handlePlayTrack = (track) => {
 
@@ -158,11 +169,17 @@ export default function Stats() {
                   />
                </div>
                <p className={styles.sectionTitle}>
-               Top 5 Artists:
+               Top Artists:
                </p>
                
+               <div>
+                  <showAllButton
+                     selectedOption={showAllArtists}
+                     onChange={handleShowAllArtistsChange}
+                  />
+               </div>
                <div className={styles.cardContainer}>
-               {artistData?.items?.slice(0, 5).map((artist, index) => (
+               {artistData?.items?.slice(0, showAllArtists ? 50 : 5).map((artist, index) => (
                   <div key={index} className={styles.cardItem}>
                      {artist['images'] && artist['images'][2] && (
                      <Image 
@@ -186,11 +203,16 @@ export default function Stats() {
                </div>
                
                <p className={styles.sectionTitle}>
-               Top 5 Songs:
+               Top Songs:
                </p>
-               
+               <div>
+                  <showAllButton
+                     selectedOption={showAllTracks}
+                     onChange={handleShowAllTracksChange}
+                  />
+               </div>
                <div className={styles.cardContainer}>
-               {trackData?.items?.slice(0, 5).map((track, index) => (
+               {trackData?.items?.slice(0, showAllTracks ? 50 : 5).map((track, index) => (
                   <div key={index} className={styles.cardItem}>
                      {track['album']['images'] && track['album']['images'][1] && (
                      <Image 
