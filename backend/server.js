@@ -24,12 +24,12 @@ const activeConnections = new Map(); // Used for progress updates, will get sent
 /*---Helper functions---*/
 
 async function getTrackData(trackIds, accessToken) {
-   try{
-
+   const defaultImagePath = "http://localhost:8081/images/no_image_provided.png";
+   try {
       const batchSize = 50;
       const trackData = {};
 
-      for( var i = 0; i < trackIds.length; i += batchSize ){
+      for(var i = 0; i < trackIds.length; i += batchSize) {
          const batch = trackIds.slice(i, i + batchSize);
 
          const response = await axios.get('https://api.spotify.com/v1/tracks', {
@@ -42,25 +42,44 @@ async function getTrackData(trackIds, accessToken) {
          });
 
          // Store duration for each track
-         response["data"]["tracks"].forEach(track => {
-            if( track ){
-               trackData[track["id"]] = {
-                  duration_ms: track["duration_ms"],
-                  album_image: track['album'] && track['album']['images'] // checks to make sure album property exists and that the album has an image, if either is false sets album image to null
-                     ? track['album']['images'][0]['url']
-                     : null
+         response.data.tracks.forEach(track => {
+            if(track) {
+               console.log(`Processing track: ${track.id}, Name: ${track.name}, Artist: ${track.artists?.[0]?.name || 'Unknown'}`);
+               
+                // Check if album images exist
+                const hasAlbumImages = track.album && 
+                  track.album.images && 
+                  Array.isArray(track.album.images) && 
+                  track.album.images.length > 0;
+
+               // Set the image URL or default
+               const imageUrl = hasAlbumImages 
+                  ? track.album.images[0].url 
+                  : defaultImagePath;  // Default image path
+
+               console.log(`Album images array for ${track.id}:`, 
+               hasAlbumImages ? JSON.stringify(track.album.images) : "No images available");
+
+               trackData[track.id] = {
+                  duration_ms: track.duration_ms,
+                  album_image: imageUrl
                };
+               
+               // Log what we're actually storing
+               console.log(`Using image for ${track.id}: ${imageUrl}`);
+            } else {
+               console.log(`Found null track in batch`);
             }
          });
 
          // Delay to avoid hitting rate limits
-         if( (i / batchSize + 1) % 5 === 0 ){
+         if((i / batchSize + 1) % 5 === 0) {
             await new Promise(resolve => setTimeout(resolve, 100));
          }
       }
 
       return trackData;
-   } catch(error){
+   } catch(error) {
       console.error("Error fetching track durations:", error.message);
       return {};
    }
@@ -209,7 +228,7 @@ async function processImportInBackground(userId, files, accessToken) {
                artists: [{ name: firstInteraction.artistName || "Unknown Artist" }],
                album: { 
                   name: firstInteraction.albumName || "Unknown Album", 
-                  images: album_image ? [{ url: album_image }] : [{ url: "/images/default_album.png" }] 
+                  images: album_image ? [{ url: album_image }] : [] 
                }
             };
 
