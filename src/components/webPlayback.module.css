@@ -198,8 +198,9 @@
    color: #0eaa45;
    font-weight: bold;
    text-align: center;
+   margin-left: 35px;
    padding: 10px;
-   background-color: rgba(70, 0, 0, 0.5);
+   background-color: rgba(255, 255, 255, 0.1);
    border-radius: 4px;
 }
 

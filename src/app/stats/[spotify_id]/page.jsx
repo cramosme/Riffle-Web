@@ -6,7 +6,7 @@ import styles from './page.module.css';
 import WebPlayback from '@/components/WebPlayback';
 import TimeRangeDropdown from '@/components/TimeRangeDropdown';
 import SortingDropdown from '@/components/SortingDropdown';
-import showAllButton from '@/components/showAllButton';
+import ShowAllButton from '@/components/ShowAllButton';
 
 export default function Stats() {
    const [profileData, setProfileData] = useState(null);
@@ -14,10 +14,11 @@ export default function Stats() {
    const [trackData, setTrackData] = useState(null);
    const [token, setToken] = useState(null);
    const [timeRange, setTimeRange] = useState("short_term");
-   const [sortMethod, setSortMethod] = useState("count");
+   const [sortMethod, setSortMethod] = useState("listen_count");
    const [hasImportedHistory, setHasImportedHistory] = useState(false);
    const [showAllArtists, setShowAllArtists] = useState(false);
    const [showAllTracks, setShowAllTracks] = useState(false);
+   const [isLoading, setIsLoading] = useState(true);
 
    const formatNumberWithCommas = (number) => {
       return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -32,6 +33,11 @@ export default function Stats() {
 
       // Fetch data with the current time range
       fetchUserData(timeRange);
+
+      // Set loading to false after everthing is loaded
+      const timer = setTimeout(() => {
+         setIsLoading(false);
+      }, 500);
    }, []);
 
    useEffect(() => {
@@ -143,9 +149,28 @@ export default function Stats() {
 
    // }
 
+   // Show loading state while data is being fetched
+   if (isLoading) {
+      return (
+         <div className={styles.container}>
+            <div className={styles.loadingContainer}>
+               <p>Loading your stats...</p>
+            </div>
+         </div>
+      );
+   }
+
+   setTimeout( ()=>{
+
+   }, 1000);
    return (
       <div className={styles.container}>
          <div className={styles.contentWrapper}>
+            {!hasImportedHistory && (
+               <div className={styles.importTitle}>
+                  Import Spotify Listening History to View Lifetime Stats
+               </div>
+            )}
          {artistData && trackData && (
             <div className={styles.contentWrapper}>
                <div className={styles.cardContainer}>
@@ -168,13 +193,10 @@ export default function Stats() {
                      hasImportedHistory={hasImportedHistory}
                   />
                </div>
-               <p className={styles.sectionTitle}>
-               Top Artists:
-               </p>
-               
-               <div>
-                  <showAllButton
-                     selectedOption={showAllArtists}
+               <div className={styles.displayTitle}>
+                  <p className={styles.sectionTitle}>Top Artists</p>
+                  <ShowAllButton
+                     isShowingAll={showAllArtists}
                      onChange={handleShowAllArtistsChange}
                   />
                </div>
@@ -183,10 +205,10 @@ export default function Stats() {
                   <div key={index} className={styles.cardItem}>
                      {artist['images'] && artist['images'][2] && (
                      <Image 
-                        src={artist['images'][2]['url']} 
+                        src={artist['images'][1]['url']} 
                         alt={artist['name']} 
-                        width={artist['images'][2]['width'] || 100} 
-                        height={artist['images'][2]['height'] || 100}
+                        width={160} 
+                        height={160}
                         className={styles.cardArtistImage}
                      />
                      )}
@@ -202,12 +224,10 @@ export default function Stats() {
                ))}
                </div>
                
-               <p className={styles.sectionTitle}>
-               Top Songs:
-               </p>
-               <div>
-                  <showAllButton
-                     selectedOption={showAllTracks}
+               <div className={styles.displayTitle}>
+                  <p className={styles.sectionTitle}>Top Tracks</p>
+                  <ShowAllButton
+                     isShowingAll={showAllTracks}
                      onChange={handleShowAllTracksChange}
                   />
                </div>

@@ -1,9 +1,10 @@
-/* Styles for the TimeRangeDropdown component */
+/* Styles for the ShowAllButton component */
 
 .container {
    position: relative;
    width: 150px;
    z-index: 10;
+   margin-left: auto;
  }
  
  .selector {
