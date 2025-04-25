@@ -2,7 +2,7 @@
 
 .playerContainer {
    display: flex;
-   width: 710px;
+   width: 1000px;
    height: 250px;
    justify-content: space-between;
    padding: 20px;
@@ -15,6 +15,7 @@
    flex-direction: column;
    align-items: center;
    justify-content: space-between;
+   margin-left: 50px;
    width: 150px;
 }
 
@@ -40,7 +41,7 @@
    color: white;
    padding: 6px 10px;
    font-family: "Lato-Bold", sans-serif;
-   font-size: 12px;
+   font-size: 14px;
    font-weight: bold;
    cursor: pointer;
    min-width: 70px;
@@ -48,11 +49,13 @@
    display: flex;
    justify-content: center;
    align-items: center;
+   position: relative;
+   overflow: hidden;
 }
 
 /* Track info section */
 .infoContainer {
-   width: 310px;
+   width: 65%;
    display: flex;
    flex-direction: column;
    justify-content: flex-start;
@@ -120,7 +123,7 @@
 
 /* Stats section */
 .statsContainer {
-   width: 180px;
+   width: 35%;
    border-left: 1px solid rgba(255, 255, 255, 0.1);
    padding-left: 15px;
    display: flex;
@@ -142,6 +145,8 @@
    background-color: rgba(255, 255, 255, 0.1);
    padding: 6px 10px;
    border-radius: 4px;
+   max-width: 225px;
+   min-height: 30px;
 }
 
 .statLabel {
