@@ -519,21 +519,23 @@ app.delete('/user/:userId', async (req, res) =>{
 app.put('/settings/:userId', async (req, res) => {
 
    const userId = req.params.userId;
-   const { skip_threshold, default_time_range, theme, data_display_format } = req.body;
+   const { skip_threshold, default_time_range, theme } = req.body;
 
    const udpateFields = {};
+   console.log(`The skip threshold received is ${skip_threshold}`);
    if( skip_threshold !== undefined ) udpateFields.skip_threshold = skip_threshold;
    if( default_time_range !== undefined ) udpateFields.default_time_range = default_time_range;
    if( theme !== undefined ) udpateFields.theme = theme;
-   if( data_display_format !== undefined ) udpateFields.data_display_format = data_display_format;
 
    if( Object.keys(udpateFields).length === 0 ){
       return res.status(400).json({error: "No update fields provided"});
    }
 
+   console.log(`Update fields: ${udpateFields["skip_threshold"]}`);
+
    try{
       const {data, error} = await supabase
-         .from('Setings')
+         .from('Settings')
          .update(udpateFields)
          .eq('user_id', userId)
          .select(); 
@@ -543,17 +545,38 @@ app.put('/settings/:userId', async (req, res) => {
          return res.status(500).json({ error: 'Failed to update settings' });
       }
 
+      let recalculationResult = null;
+
+      // If skip threshold was updated, recalculate statistics
+      if( skip_threshold !== undefined ){
+         console.log(`Recalculating track statistics with new threshold ${skip_threshold}`);
+         recalculationResult = await recalculateCounts(userId, skip_threshold);
+
+         if( recalculationResult.error ){
+            console.error("Error recalculating counts:", recalculationResult.error);
+            res.json({
+               success: true,
+               message: "Settings updated, but failed to recalculate tracks",
+               settings: data[0],
+               recalculationError: recalculationResult.error
+            });
+         }
+      }
+
+      // Return success with settings and recalc result
       res.json({
          success: true,
-         message: "Settings updated successfully",
-         settings: data[0]
+         message: recalculationResult ? 
+            `Settings updated successfully. Updated ${recalculationResult.updatedCount} track interactions.` : 
+            "Settings updated successfully",
+         settings: data[0],
+         recalculation: recalculationResult
       });
 
    } catch( error ){
       console.error("Error in settings update:", error);
       return res.status(500).json({error: "Failed to update settings"});
    }
-
 });
 
 // Used to fetch user settings to prefill settings page
