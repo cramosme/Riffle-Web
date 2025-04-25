@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import styles from './webPlayback.module.css';
 import { useSpotify } from '@/context/SpotifyContext';
 
-function WebPlayback() {
+function WebPlayback({token, timeRange}) {
 
    const [trackStats, setTrackStats] = useState(null);
    const [isLoadingStats, setIsLoadingStats] = useState(false);
@@ -152,7 +152,7 @@ function WebPlayback() {
                   <div className={styles.trackName}>{currentTrack.name}</div>
                </div>
                
-               {/* Space for future progress bar */}
+               {/* Progress bar */}
                <div className={styles.progressSpace}>
                   <div className={styles.progressBarContainer}>
                      <div 
@@ -184,17 +184,19 @@ function WebPlayback() {
                         </div>
                      </div>
                   ) : (
-                        <>
+                     <>
                         <div className={styles.statsRow}>
-                           <div className={styles.statItem}>
-                              <span className={styles.statLabel}>Rank:</span>
-                              <span className={styles.statValue}>
-                                 N/A
-                                 <span className={styles.rankTooltip}>
+                           {timeRange === "lifetime" && (
+                              <div className={styles.statItem}>
+                                 <span className={styles.statLabel}>Rank:</span>
+                                 <span className={styles.statValue}>
+                                    N/A
+                                    <span className={styles.rankTooltip}>
                                     Based on sorting method
+                                    </span>
                                  </span>
-                              </span>
-                           </div>
+                              </div>
+                           )}
                            <div className={styles.statItem}>
                               <span className={styles.statLabel}>Skips:</span>
                               <span className={styles.statValue}>{trackStats.skipCount}</span>

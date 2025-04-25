@@ -11,12 +11,15 @@
    font-size: 20px;
    font-family: "Lato-Bold", sans-serif;
    color: #fff;
-   min-width: 200px;
    cursor: pointer;
    z-index: 10;
 }
 
-.button.primary:hover {
+.button.primaryLogin:hover {
+   background-color: #0c8a3e;
+}
+
+.button.primaryLogout:hover {
    background-color: #0c8a3e;
 }
 
@@ -32,16 +35,27 @@
 }
  
  /* Styles specific to default button (login/logout) */
-.primary {
+.primaryLogout {
+   min-width: 200px;
    background-color: #0eaa45;
 }
  
-.primary:active {
+.primaryLogout:active {
+   background-color: #0c8a3e;
+}
+
+.primaryLogin {
+   margin-right: 50px;
+   background-color: #0eaa45;
+}
+ 
+.primaryLogin:active {
    background-color: #0c8a3e;
 }
  
  /* Styles specific to destructive buttons (delete account) */
 .danger {
+   min-width: 200px;
    background-color: #b62919;
 }
  
@@ -50,6 +64,7 @@
 }
 
 .secondary {
+   min-width: 200px;
    background-color: #555;
    color: white;
 }

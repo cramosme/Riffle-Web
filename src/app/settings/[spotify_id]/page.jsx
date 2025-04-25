@@ -7,7 +7,7 @@ import buttonStyles from "@/components/Button.module.css";
 
 export default function Settings() {
    const [skipThreshold, setSkipThreshold] = useState("");
-   const [originalThreshold, setOriginalThreshold] = useState(20);
+   const [originalThreshold, setOriginalThreshold] = useState("");
    const [isSaving, setIsSaving] = useState(false);
    const [saveMessage, setSaveMessage] = useState(null);
    const [userId, setUserId] = useState(null);
@@ -213,7 +213,7 @@ export default function Settings() {
                <Button 
                   label={isSaving ? "Saving..." : "Save Settings"} 
                   onClick={handleSaveSettings} 
-                  variant="primary"
+                  variant="primaryLogout"
                   disabled={isSaving || !hasChanges || !!inputError}
                />
                
@@ -238,7 +238,7 @@ export default function Settings() {
 
          {/* Account buttons */}
          <div className={buttonStyles.buttonsContainer}>
-            <Button label="Logout" onClick={handleLogout} variant="primary" />
+            <Button label="Logout" onClick={handleLogout} variant="primaryLogout" />
             <Button label="Delete Account" onClick={handleDeleteAccount} variant="danger" />
          </div>
       </div>
