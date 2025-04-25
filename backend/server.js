@@ -672,6 +672,8 @@ app.get('/user/import-status/:userId', async (req, res) => {
 app.get('/track-stats/:userId/:trackId', async (req, res) => {
 
    const { userId, trackId } = req.params;
+   let trackDuration_ms = 0;
+   const token = req.headers.authorization?.split(' ')[1];
 
    try {
       const { data, error } = await supabase
@@ -685,25 +687,46 @@ app.get('/track-stats/:userId/:trackId', async (req, res) => {
          return res.status(500).json({ error: 'Failed to fetch track statistics' });
       }
       
+      if( data ){
+         console.log("Getting duration from data");
+         trackDuration_ms = data["track_duration"];
+      }
+      // If song is not in the database, make api call to get track duration
+      else if(token){
+         console.log("getting duration from api call")
+         try {
+            const response = await axios.get(`https://api.spotify.com/v1/tracks/${trackId}`, {
+               headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            trackDuration_ms = response["data"]["duration_ms"] || 0;
+            console.log(`Fetched track duration from Spotify API: ${trackDuration_ms}ms`);
+         } catch (error) {
+            console.log("Couldn't get track duration from Spotify API:", error.message);
+         }
+      } 
+      
       // If no record exists yet, return default stats
       if (!data) {
+         console.log(`No data but track duration is ${trackDuration_ms}`);
          return res.json({ 
             isFirstPlay: true,
             listenCount: 0,
             skipCount: 0,
             minutesListened: 0,
+            trackDuration: trackDuration_ms,
             rank: null // Will implement rank later
          });
       }
-      
+      console.log(`Data and track duration is ${trackDuration_ms}`);
       // Return the statistics
-      res.json({
+      return res.json({
          isFirstPlay: data["listen_count"] === 0 && data["skip_count"] === 0,
          listenCount: data["listen_count"],
          skipCount: data["skip_count"],
          minutesListened: data["minutes_listened"],
          playData: data["play_data"],
-         trackDuration: data["track_duration"],
+         trackDuration: trackDuration_ms,
          rank: null // Will implement rank later
       });
    } catch (error) {

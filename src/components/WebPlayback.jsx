@@ -57,7 +57,12 @@ function WebPlayback() {
             
             try {
                const userId = localStorage.getItem('user_id');
-               const response = await fetch(`http://localhost:3000/track-stats/${userId}/${currentTrack["id"]}`);
+               const token = localStorage.getItem("access_token");
+               const response = await fetch(`http://localhost:3000/track-stats/${userId}/${currentTrack["id"]}`, {
+                  headers: {
+                     "Authorization": `Bearer ${token}`
+                  }
+               });
                
                if (!response.ok) {
                   throw new Error('Failed to fetch track statistics');
@@ -109,60 +114,7 @@ function WebPlayback() {
             </div>
          );
       }
-   
-      // Active playback state
-      // return (
-      //    <div className={styles.mainWrapper}>
-      //       <div className={styles.coverContainer}>
-      //       <div className={styles.trackInfo}>
-      //          <div className={styles.albumColumn}>
-      //             <img 
-      //             src={currentTrack.album.images[0].url} 
-      //             className={styles.nowPlayingCover} 
-      //             alt={`Album cover for ${currentTrack.name}`} 
-      //             />
-      //          </div>
-      //          <div className={styles.nowPlayingSide}>
-      //             <div className={styles.nowPlayingArtist}>
-      //             {currentTrack.artists.map((artist, index) => (
-      //                <span key={index}>
-      //                   {index > 0 ? ", " : ""}
-      //                   {artist.name}
-      //                </span>
-      //             ))}
-      //             </div>
-      //             <div className={styles.nowPlayingName}>{currentTrack.name}</div>
-      //          </div>
-      //       </div>
-   
-      //       <div className={styles.container}>
-      //          <button 
-      //             className={styles.btnSpotify}
-      //             onClick={handlePreviousTrack}
-      //             aria-label="Previous track"
-      //          >
-      //             &lt;&lt;
-      //          </button>
-   
-      //          <button 
-      //             className={styles.btnSpotify}
-      //             onClick={handleTogglePlay}
-      //             aria-label={isPaused ? "Play" : "Pause"}
-      //          >
-      //             {isPaused ? "PLAY" : "PAUSE"}
-      //          </button>
-   
-      //          <button 
-      //             className={styles.btnSpotify} 
-      //             onClick={handleNextTrack}
-      //             aria-label="Next track"
-      //          >
-      //             &gt;&gt;
-      //          </button>
-      //       </div>
-      //       </div>
-      //    </div>   
-      // );
+      
       // Active playback state
       return (
          <div className={styles.playerContainer}>
@@ -205,12 +157,14 @@ function WebPlayback() {
                   <div className={styles.progressBarContainer}>
                      <div 
                         className={styles.progressBar} 
-                        style={{width: `${(position/trackStats.trackDuration)*100}%`}}
+                        style={{width: trackStats && trackStats.trackDuration ? 
+                           `${(position / trackStats.trackDuration) * 100}%` : '0%'
+                        }}
                      />   
                   </div>
                   <div className={styles.progressTimeContainer}>
                      <span>{formatTime(position)}</span>
-                     <span>{formatTime(trackStats.trackDuration)}</span>
+                     <span>{trackStats ? formatTime(trackStats.trackDuration) : '0:00'}</span>
                   </div>
                </div>
             </div>
@@ -223,9 +177,14 @@ function WebPlayback() {
                   <p className={styles.statsError}>{statsError}</p>
                ) : trackStats ? (
                   trackStats.isFirstPlay ? (
-                     <div className={styles.firstPlay}>First time listening!</div>
+                     <div className={styles.firstPlay}>
+                        First time listening!
+                        <div style={{ fontSize: '14px', marginTop: '6px' }}>
+                           Replay the song to view updated stats.
+                        </div>
+                     </div>
                   ) : (
-                     <>
+                        <>
                         <div className={styles.statsRow}>
                            <div className={styles.statItem}>
                               <span className={styles.statLabel}>Rank:</span>

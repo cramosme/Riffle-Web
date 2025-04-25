@@ -1,19 +1,22 @@
 "use client"
 
-import styles from './TimeRangeDropdown.module.css';
-import { useState, useEffect, useRef } from 'react';
+import styles from './ShowAllButton.module.css';
 
-export default function showAllButton({selectedOption, onChange}) {
-   const [isOpen, setIsOpen] = useState(false);
-   
+export default function showAllButton({isShowingAll, onChange}) {
+
+   const handleToggle = () => {
+      onChange(!isShowingAll);
+   }
+
    return (
-      <div className={styles.container} ref={dropdownRef}>
+      <div className={styles.container}>
         <button 
           className={styles.selector} 
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={handleToggle}
+          aria-label={isShowingAll ? "Show less items" : "Show all items"}
         >
-          <span>{selectedLabel}</span>
-          <span className={styles.arrow}>{isOpen ? 'Show Less ▲' : 'Show All ▼'}</span>
+         <span>{isShowingAll ? "Show Less" : "Show All"}</span>
+         <span className={styles.arrow}>{isShowingAll ? "▲" : "▼"}</span>
         </button>
       </div>
     );

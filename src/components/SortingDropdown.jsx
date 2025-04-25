@@ -14,13 +14,13 @@ export default function SortingDropdown({selectedMethod, onChange}) {
       { id: 'skip_count', label: 'Skip Count', disabled: false }
    ];
    
-   const selectedLabel = sortingMethods.find(range => range.id === selectedMethod)?.label || 'Listen Count';
+   const selectedLabel = sortingMethods.find(method => method.id === selectedMethod)?.label || 'Listen Count';
    
-   const handleSelect = (rangeId) => {
-     const range = sortingMethods.find(r => r.id === rangeId);
+   const handleSelect = (methodId) => {
+     const method = sortingMethods.find(m => m.id === methodId);
      
-     if (range && !range.disabled) {
-       onChange(rangeId);
+     if (method && !method.disabled) {
+       onChange(methodId);
        setIsOpen(false);
      }
    };
@@ -56,20 +56,20 @@ export default function SortingDropdown({selectedMethod, onChange}) {
        
        {isOpen && (
          <ul className={styles.dropdown} role="listbox">
-           {sortingMethods.map((range) => (
+           {sortingMethods.map((method) => (
              <li 
-               key={range.id}
+               key={method.id}
                className={`
                  ${styles.option} 
-                 ${selectedMethod === range.id ? styles.selected : ''} 
-                 ${range.disabled ? styles.disabled : ''}
+                 ${selectedMethod === method.id ? styles.selected : ''} 
+                 ${method.disabled ? styles.disabled : ''}
                `}
-               onClick={() => handleSelect(range.id)}
+               onClick={() => handleSelect(method.id)}
                role="option"
-               aria-selected={selectedMethod === range.id}
-               aria-disabled={range.disabled}
+               aria-selected={selectedMethod === method.id}
+               aria-disabled={method.disabled}
              >
-               {range.label}
+               {method.label}
              </li>
            ))}
          </ul>
