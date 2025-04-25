@@ -185,7 +185,7 @@ export default function Stats() {
                </div>
                <div className={styles.cardContainer}>
                   <div className={styles.webPlaybackContainer}>
-                     {token && profileData ? <WebPlayback token={token}/> : null}
+                     {token && profileData ? <WebPlayback token={token} timeRange={timeRange}/> : null}
                   </div>
                </div>
                

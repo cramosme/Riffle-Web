@@ -209,6 +209,9 @@ async function calculateMinutesListened(userId, trackId){
 // Only need to pass userId because we want it to affect all of their tracks, not just one
 async function recalculateCounts(userId, newThreshold) {
 
+   console.log(`Starting recalculation for user ${userId} with new threshold ${newThreshold}`);
+
+
    const { data: interactions, error } = await supabase
       .from('Track Interactions')
       .select('*')
@@ -222,13 +225,20 @@ async function recalculateCounts(userId, newThreshold) {
       return { success: true, message: "No interactions found", count: 0};
    }
 
+   console.log(`Found ${interactions.length} total interactions to process`);
+
    // Used to see how many tracks were updated
    let updatedCount = 0;
+   let skippedDueToNoData = 0;
+   let skippedDueToNoChange = 0;
+   let skippedDueToZeroDuration = 0;
+   let errorCount = 0;
 
    for( const interaction of interactions ){
 
       // If there is no play data for the song then skip it
       if( !interaction["play_data"] || !Array.isArray(interaction["play_data"]["plays"]) ){
+         skippedDueToNoData++;
          continue;
       }
 
@@ -237,6 +247,11 @@ async function recalculateCounts(userId, newThreshold) {
 
       // Get track duration
       const trackDuration = interaction["track_duration"];
+
+      if (!trackDuration || trackDuration <= 0) {
+         skippedDueToZeroDuration++;
+         continue;
+      }
 
       for( var i = 0; i < interaction["play_data"]["plays"].length; i++ ){
          let duration = interaction["play_data"]["plays"][i];
@@ -252,6 +267,7 @@ async function recalculateCounts(userId, newThreshold) {
 
       // If for some reason they are the same, skip it
       if( listenCount === interaction["listen_count"] && skipCount === interaction["skip_count"]) {
+         skippedDueToNoChange++;
          continue;
       }
 
@@ -263,11 +279,20 @@ async function recalculateCounts(userId, newThreshold) {
 
       if( updateError ){
          console.error(`Error updating interaction ${interaction["id"]}:`, updateError);
+         errorCount++;
       }
       else{
          updatedCount++;
       }
    }
+
+   console.log(`Recalculation complete:
+      - Total interactions: ${interactions.length}
+      - Updated: ${updatedCount}
+      - Skipped (no data): ${skippedDueToNoData}
+      - Skipped (no change needed): ${skippedDueToNoChange}
+      - Skipped (zero duration): ${skippedDueToZeroDuration}
+      - Errors: ${errorCount}`);
 
    return{
       success: true,

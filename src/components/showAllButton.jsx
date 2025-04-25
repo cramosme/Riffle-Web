@@ -19,5 +19,5 @@ export default function showAllButton({isShowingAll, onChange}) {
          <span className={styles.arrow}>{isShowingAll ? "▲" : "▼"}</span>
         </button>
       </div>
-    );
+   );
 }
