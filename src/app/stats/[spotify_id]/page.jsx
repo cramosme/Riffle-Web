@@ -37,7 +37,7 @@ export default function Stats() {
       // Set loading to false after everthing is loaded
       const timer = setTimeout(() => {
          setIsLoading(false);
-      }, 500);
+      }, 200); // Waits 200 ms
    }, []);
 
    useEffect(() => {
@@ -160,9 +160,6 @@ export default function Stats() {
       );
    }
 
-   setTimeout( ()=>{
-
-   }, 1000);
    return (
       <div className={styles.container}>
          <div className={styles.contentWrapper}>
@@ -173,6 +170,19 @@ export default function Stats() {
             )}
          {artistData && trackData && (
             <div className={styles.contentWrapper}>
+               <div className={styles.dropdownContainer}>
+                  {timeRange === "lifetime" && (
+                     <SortingDropdown
+                        selectedMethod={sortMethod}
+                        onChange={handleSortingChange}
+                     />
+                  )}
+                  <TimeRangeDropdown
+                     selectedRange={timeRange}
+                     onChange={handleTimeRangeChange}
+                     hasImportedHistory={hasImportedHistory}
+                  />
+               </div>
                <div className={styles.cardContainer}>
                   <div className={styles.webPlaybackContainer}>
                      {token && profileData ? <WebPlayback token={token}/> : null}
@@ -180,19 +190,6 @@ export default function Stats() {
                </div>
                
 
-               <div className={styles.dropdownContainer}>
-                  {/* {timeRange === "Lifetime" && ( */}
-                     <SortingDropdown
-                        selectedRange={sortMethod}
-                        onChange={handleSortingChange}
-                     />
-                  {/* )} */}
-                  <TimeRangeDropdown
-                     selectedRange={timeRange}
-                     onChange={handleTimeRangeChange}
-                     hasImportedHistory={hasImportedHistory}
-                  />
-               </div>
                <div className={styles.displayTitle}>
                   <p className={styles.sectionTitle}>Top Artists</p>
                   <ShowAllButton

@@ -50,6 +50,7 @@
    border-bottom-color: #0a7434;
    border-radius: 10px;
    gap: 16px; /* Add consistent gap between items */
+   width: 100%;
 }
 
 .webPlaybackContainer {
@@ -58,8 +59,16 @@
    justify-content: center;
    align-items: center;
    width: 100%;
+   min-height: 250px;
 }
 
+ .dropdownContainer {
+   display: flex;
+   justify-content: flex-end;
+   width: 100%;
+   margin-bottom: 45px;
+   gap: 16px;
+ }
  
 .cardItem {
    display: flex;
@@ -108,15 +117,6 @@
    text-align: center;
 }
 
- .dropdownContainer {
-   display: flex;
-   justify-content: center;
-   width: 100%;
-   margin-top: 100px;
-   margin-bottom: 40px;
-   gap: 16px;
- }
-
  .loadingContainer {
    display: flex;
    justify-content: center;
@@ -133,4 +133,5 @@
    align-items: center;
    width: 100%;
    margin-top: 40px;
+   margin: 30px;
  }
