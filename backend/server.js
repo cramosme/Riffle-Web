@@ -198,54 +198,64 @@ async function processImportInBackground(userId, files, accessToken) {
       }, 2000);
 
       for await (const [trackId, interactions] of trackInteractions) {
-         const firstInteraction = interactions[0];
-         const { duration_ms, album_image } = apiTrackData[trackId] || { duration_ms: 0, album_image: null };
-      
-         // Prepare track data
-         const trackData = {
-            id: trackId,
-            name: firstInteraction.trackName || "Unknown Track",
-            artists: [{ name: firstInteraction.artistName || "Unknown Artist" }],
-            album: { 
-               name: firstInteraction.albumName || "Unknown Album", 
-               images: album_image ? [{ url: album_image }] : [] 
-            }
-         };
-      
-         // Upsert track
-         const { track, error: trackError } = await upsertTrack(trackData);
-         if( trackError ){
-            console.error("Error upserting track:", trackError);
-            continue;
-         }
-      
-         // Process all interactions for this track
-         for( const interaction of interactions ) {
+         try{
+            const firstInteraction = interactions[0];
+            const { duration_ms, album_image } = apiTrackData[trackId] || { duration_ms: 0, album_image: null };
+         
+            // Prepare track data
+            const trackData = {
+               id: trackId,
+               name: firstInteraction.trackName || "Unknown Track",
+               artists: [{ name: firstInteraction.artistName || "Unknown Artist" }],
+               album: { 
+                  name: firstInteraction.albumName || "Unknown Album", 
+                  images: album_image ? [{ url: album_image }] : [{ url: "/images/default_album.png" }] 
+               }
+            };
 
-            const { trackData: interactionData, error: interactionError } = await upsertTrackInteractions(
-               userId, 
-               trackId, 
-               interaction.msPlayed || 0, // Ensure msPlayed is valid
-               duration_ms
-            );
-      
-            if( interactionError ){
-               console.error("Error upserting track interaction:", interactionError);
+            console.log(`Processing track: ${trackId}, Name: ${trackData.name}, Artist: ${trackData.artists[0].name}`);
+            console.log(`Album images array:`, JSON.stringify(trackData.album.images));
+         
+            // Upsert track
+            const { track, error: trackError } = await upsertTrack(trackData);
+            if( trackError ){
+               console.error("Error upserting track:", trackError);
+               continue;
             }
-         }
-      
-         interactionCount++;
-      
-         // Update progress more frequently
-         if( interactionCount % 100 === 0 || interactionCount === totalTracks ){
-            console.log("Processed 100 tracks...");
-            sendProgressUpdate(connection, {
-               status: "processing",
-               progress: 35 + Math.round((interactionCount/totalTracks) * 50), // Up to 85
-               phase: "processing_interactions",
-               interactionCount,
-               totalTracks
-            });
+         
+            // Process all interactions for this track
+            for( const interaction of interactions ) {
+
+               const { trackData: interactionData, error: interactionError } = await upsertTrackInteractions(
+                  userId, 
+                  trackId, 
+                  interaction.msPlayed || 0, // Ensure msPlayed is valid
+                  duration_ms
+               );
+         
+               if( interactionError ){
+                  console.error("Error upserting track interaction:", interactionError);
+               }
+            }
+         
+            interactionCount++;
+         
+            // Update progress more frequently
+            if( interactionCount % 100 === 0 || interactionCount === totalTracks ){
+               console.log("Processed 100 tracks...");
+               sendProgressUpdate(connection, {
+                  status: "processing",
+                  progress: 35 + Math.round((interactionCount/totalTracks) * 50), // Up to 85
+                  phase: "processing_interactions",
+                  interactionCount,
+                  totalTracks
+               });
+            }
+         } catch (error) {
+            console.error(`Error processing track ${trackId}:`, error);
+            // Continue with the next track instead of failing the entire import
+            interactionCount++;
+            continue;
          }
       }
 

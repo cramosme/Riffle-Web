@@ -2,6 +2,8 @@ const supabase = require('../../lib/supabaseclient');
 
 async function upsertTrack(trackData){
 
+   console.log("Upserting track", JSON.stringify(trackData));
+
    // Make the track record, we can combine artist into a single string
    const trackRecord = {
       track_id: trackData['id'],
@@ -9,10 +11,12 @@ async function upsertTrack(trackData){
       artist: Array.isArray(trackData['artists']) // checks to see if we have artists
          ? trackData['artists'].map(artist => artist['name']).join(', ')
          : 'Unknown',  // Fallback if no artist data is present
-      album_image: trackData['album'] && trackData['album']['images'] // checks to make sure album property exists and that the album has an image, if either is false sets album image to null
+      album_image: trackData['album'] && trackData['album']['images'] && trackData['album']['images'].length > 0 // Add length check
          ? trackData['album']['images'][0]['url']
-         : null,
+         : "/images/default_album.png",
    };
+
+   console.log("Created track record:", JSON.stringify(trackRecord));
 
    // Use upsert to insert the track if it doesnt exist, or update if it already does. Using track_id as the key
    const { data, error } = await supabase
