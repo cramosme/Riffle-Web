@@ -36,12 +36,12 @@ export default function Home() {
         <Feature
           icon={<FaUserAlt size={50} />}
           title="View your top artists"
-          description="Explore your top 5 most played artists in the past month."
+          description="Explore your top played artists."
         />
         <Feature
           icon={<FaMusic size={50} />}
           title="View your top songs"
-          description="Check out your top 5 most listened to tracks in the past month."
+          description="Check out your most listened to tracks."
         />
         <Feature
           icon={<FaPlay size={50} />}
