@@ -15,8 +15,8 @@
    flex-direction: column;
    align-items: center;
    justify-content: center;
-   padding: 20px;
-   width: 100%;
+   padding: 60px;
+   width: 110%;
    max-width: 1152px;
    z-index: 1;
  }
@@ -41,7 +41,7 @@
    flex-wrap: wrap;
    justify-content: center;
    align-items: flex-start;
-   padding: 32px;
+   padding: 16px;
    background-color: #1a1a1a;
    border: 5px solid;
    border-top-color: #0eaa45;
@@ -51,6 +51,7 @@
    border-radius: 10px;
    gap: 16px; /* Add consistent gap between items */
    width: 100%;
+   /* background-color: #0a7434; */
 }
 
 .webPlaybackContainer {
@@ -75,46 +76,57 @@
    flex-direction: column;
    justify-content: center;
    align-items: center;
-   padding: 0 16px;
-   width: calc(20% - 16px); /* Account for gap and padding */
+   padding: 20px;
+   width: calc(20% - 30px); /* Account for gap and padding */
    box-sizing: border-box;
-   min-width: 160px; /* Minimum width before wrapping */
+   min-width: 180px; /* Minimum width before wrapping */
+   /* background-color: #0a7434; */
 }
  
-.cardAlbumImage {
-   width: 150px;
-   height: 150px;
+.cardAlbumImage, .cardArtistImage {
+   width: 160px;
+   height: 160px;
    object-fit: cover;
+}
+
+.cardAlbumImage {
    border-radius: 8px;
 }
- 
+
 .cardArtistImage {
    border-radius: 50%;
-   object-fit: cover;
 }
  
 .cardTitle {
+   height: 70px;
    font-size: 20px;
    padding: 10px 0;
    color: white;
    font-family: 'Lato-Bold', sans-serif;
    text-align: center;
+   width: 128%;
+   /* background-color:#aa930e; */
 }
  
 .cardSubtitle {
+   height: 80px;
+   width: 128%;
    font-size: 20px;
    padding: 10px 0;
    color: white;
    font-family: 'Lato-Bold', sans-serif;
    text-align: center;
+   /* background-color: rgb(19, 20, 22); */
 }
- 
+
 .cardDetail {
+   width: 100%;
    font-size: 20px;
-   padding: 10px 0;
+   padding: 16px 0;
    color: white;
    font-family: 'Lato-Bold', sans-serif;
    text-align: center;
+   /* background-color: rgb(47, 67, 107); */
 }
 
  .loadingContainer {

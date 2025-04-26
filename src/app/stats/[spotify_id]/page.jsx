@@ -20,8 +20,16 @@ export default function Stats() {
    const [showAllTracks, setShowAllTracks] = useState(false);
    const [isLoading, setIsLoading] = useState(true);
 
+   // Helper function to add commas to follower count
    const formatNumberWithCommas = (number) => {
       return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+   };
+
+   // Helper function to truncate text
+   const truncateText = (text, maxLength) => {
+      if (!text) return '';
+      if (text.length <= maxLength) return text;
+      return text.substring(0, maxLength) + '...';
    };
 
    useEffect(() => {
@@ -242,25 +250,21 @@ export default function Stats() {
                      )}
                      
                      <p className={styles.cardTitle}>
-                     {index + 1}: {track['name']}
+                        {index + 1}: {truncateText(track['name'], 25)}
                      </p>
                      
                      <p className={styles.cardSubtitle}>
-                     Artist(s):
-                     <span>
-                        {' '}{track['artists'][0]['name']}
-                     </span>
-                     
-                     {track?.artists?.slice(1, track.artists.length).map((artist, artistIndex) => (
-                        <span key={artistIndex}>
-                           , {artist['name']}
-                        </span>
-                     ))}
+                        Artist(s): {
+                           truncateText(
+                              track.artists.map(artist => artist.name).join(', '), 
+                              40
+                           )
+                        }
                      </p>
-                     
-                     <p className={styles.cardDetail}>
+
+                     {/* <p className={styles.cardDetail}>
                      Release Date: {track['album']['release_date']}
-                     </p>
+                     </p> */}
                   </div>
                ))}
                </div>
