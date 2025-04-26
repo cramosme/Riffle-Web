@@ -1,18 +1,70 @@
 /* Stles for landing page content */
 
 .container {
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   padding: 2rem 1rem;
-   width: 100%;
-   max-width: 100%;
- }
- 
- .welcomeText {
-   font-size: 1.25rem;
-   color: white;
-   margin-top: 2rem;
-   max-width: 42rem;
-   text-align: center;
- }
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+.welcomeText {
+  font-size: 1.25rem;
+  color: white;
+  margin-top: 2rem;
+  max-width: 42rem;
+  text-align: center;
+}
+
+.artistBackground {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.floatingArtist {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 50%;
+  opacity: 1;
+  transition: transform 0.3s ease;
+}
+
+.featuresContainer {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.featureItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 4rem;
+}
+
+.featureIcon {
+  color: #1ED760;
+  min-width: 40px;
+}
+
+.featureTitle {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.featureDesc {
+  margin: 0.25rem 0 0;
+  color: #ccc;
+}
