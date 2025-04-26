@@ -37,6 +37,7 @@ function WebPlayback({token, timeRange}) {
          currentTrack,
          error,
          position,
+         skipThreshold,
          transferPlayback,
          handlePreviousTrack, 
          handleTogglePlay,
@@ -57,7 +58,6 @@ function WebPlayback({token, timeRange}) {
             
             try {
                const userId = localStorage.getItem('user_id');
-               const token = localStorage.getItem("access_token");
                const response = await fetch(`http://localhost:3000/track-stats/${userId}/${currentTrack["id"]}`, {
                   headers: {
                      "Authorization": `Bearer ${token}`
@@ -205,12 +205,23 @@ function WebPlayback({token, timeRange}) {
                         <div className={styles.statsRow}>
                            <div className={styles.statItem}>
                               <span className={styles.statLabel}>Plays:</span>
-                              <span className={styles.statValue}>{trackStats.listenCount}</span>
+                              <span className={styles.statValue}>
+                                 { trackStats.listenCount }
+                                 {
+                                    ((position / trackStats.trackDuration) * 100) >= skipThreshold && (
+                                    <span className={styles.currentListen}>
+                                    (+1)
+                                    </span>
+                                 )}
+                              </span>
                            </div>
                            <div className={styles.statItem}>
                               <span className={styles.statLabel}>Minutes:</span>
                               <span className={styles.statValue}>
-                                 {trackStats.minutesListened.toFixed(1)}
+                                 {trackStats.minutesListened.toFixed(2)}
+                                 <span className={styles.currentListen}>
+                                    (+{(position / 1000 / 60).toFixed(2)})
+                                 </span>
                               </span>
                            </div>
                         </div>

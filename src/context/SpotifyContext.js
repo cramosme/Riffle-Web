@@ -25,6 +25,7 @@ export function SpotifyProvider({ children }) {
    const [currentTrack, setCurrentTrack] = useState(defaultTrack);
    const [error, setError] = useState(null);
    const [position, setPosition] = useState("");
+   const [skipThreshold, setSkipThreshold] = useState("");
    
    // Refs to track state
    const scriptInjected = useRef(false);
@@ -41,7 +42,7 @@ export function SpotifyProvider({ children }) {
       return null;
    };
    
-   // Initialize SDK and player on mount
+   // Initialize SDK and player on mount and fetch settings
    useEffect(() => {
       const token = getToken();
       if (!token) return;
@@ -66,6 +67,24 @@ export function SpotifyProvider({ children }) {
       if (window.Spotify && !player) {
          initializePlayer(token);
       }
+
+      // Also fetch user settings
+      const fetchUserSettings = async () => {
+         try {
+           const userId = localStorage.getItem("user_id");
+           if (!userId) return;
+           
+           const response = await fetch(`http://localhost:3000/settings/${userId}`);
+           if (response.ok) {
+             const data = await response.json();
+             setSkipThreshold(data.settings.skip_threshold);
+           }
+         } catch (error) {
+           console.error("Error fetching user settings:", error);
+         }
+       };
+       
+       fetchUserSettings();
    }, []);
    
    // Initialize the player with the token
@@ -466,6 +485,7 @@ export function SpotifyProvider({ children }) {
       deviceId,
       error,
       position,
+      skipThreshold,
       
       // Player controls
       transferPlayback,
