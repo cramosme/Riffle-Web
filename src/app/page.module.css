@@ -1,42 +1,50 @@
 /* Stles for landing page content */
 
 .container {
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   padding: 2rem 1rem;
-   width: 100%;
-   max-width: 100%;
- }
- 
- .welcomeText {
-   font-size: 1.25rem;
-   color: white;
-   margin-top: 2rem;
-   max-width: 42rem;
-   text-align: center;
- }
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1rem;
+  width: 100%;
+  max-width: 100%;
+}
 
- .featureIcon {
-   /* background-color: beige; */
-   margin-top: 16px;
-   color: #0eaa45;
- }
+.welcomeText {
+  font-size: 1.25rem;
+  color: white;
+  margin-top: 2rem;
+  max-width: 42rem;
+  text-align: center;
+}
 
- .featureTitle {
-   /* background-color: blue; */
-   padding: 0 10px;
-   font-size: 20px;
-   font-weight: bold;
-   color: white;
-   font-family: 'Lato-Bold', Arial, sans-serif;
- }
+.featuresContainer {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
 
- .featureDesc {
-   /* background-color: blueviolet; */
-   padding: 0 10px;
-   font-size: 20px;
-   font-weight: bold;
-   color: white;
-   font-family: 'Lato-Bold', Arial, sans-serif;
- }
+.featureItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+.featureIcon {
+  color: #1ED760;
+  min-width: 40px;
+}
+
+.featureTitle {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.featureDesc {
+  margin: 0.25rem 0 0;
+  color: #ccc;
+}
