@@ -96,6 +96,6 @@ export default function SpotifyAuthWithPKCE() {
    };
 
    return(
-      <Button label="Login" onClick={handleLogin}/>
+      <Button label="Login" onClick={handleLogin} variant="primaryLogin"/>
    );
 }

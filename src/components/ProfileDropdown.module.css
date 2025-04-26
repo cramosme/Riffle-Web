@@ -10,24 +10,36 @@
    border: none;
    cursor: pointer;
    padding: 0;
+   display: flex;
+   align-items: center;
+   gap: 10px;
+   margin-right: 50px;
 }
  
 .profileImage {
    margin-top: 5px;
-   margin-right: 30px;
    border-radius: 50%;
    object-fit: cover;
-   transition: opacity 0.2s;
 }
  
-.profileImage:hover {
-   opacity: 0.8;
+.profileButton:hover .userName{
+   color:#0eaa45;
+}
+
+.userName {
+   font-size: 24px;
+   font-weight: bold;
+   color: white;
+   font-family: 'Lato-Bold', Arial, sans-serif;
+   max-width: 200px;
+   white-space: nowrap;
+   overflow: hidden;
+   text-overflow: ellipsis;
 }
  
 .dropdown {
    position: absolute;
    top: 50px;
-   right: 0;
    background-color: #1a1a1a;
    border: 1px solid #333;
    border-radius: 5px;

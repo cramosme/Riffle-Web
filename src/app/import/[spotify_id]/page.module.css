@@ -1,0 +1,126 @@
+/* Styles for import page */
+
+.container {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   background-color: #25292e;
+   min-height: 100%;
+   padding: 32px 16px;
+   color: white;
+   font-family: 'Lato-Bold', sans-serif;
+   z-index: 1;
+ }
+ 
+ .title {
+   font-size: 32px;
+   margin-bottom: 32px;
+   text-align: center;
+   color: white;
+ }
+ 
+ .instructionsTitle {
+   font-size: 24px;
+   margin: 24px 0 16px;
+   text-align: center;
+   color: white;
+ }
+ 
+ .importSection {
+   display: flex;
+   flex-direction: column;
+   gap: 24px;
+   width: 100%;
+   max-width: 800px;
+   z-index: 1;
+
+ }
+ 
+ .importBox {
+   background-color: #1a1a1a;
+   border: 5px solid #0eaa45;
+   border-radius: 10px;
+   padding: 24px;
+   width: 100%;
+ }
+ 
+ .stepContainer {
+   display: flex;
+   align-items: center;
+   margin-bottom: 16px;
+ }
+ 
+ .stepNumber {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   width: 36px;
+   height: 36px;
+   background-color: #0eaa45;
+   color: white;
+   border-radius: 50%;
+   font-size: 20px;
+   font-weight: bold;
+   margin-right: 16px;
+ }
+ 
+ /* Text to the left of the step number */
+ .stepTitle {
+   font-size: 24px;
+   color: white;
+   margin: 0;
+ }
+ 
+ /* Used for the instructions text */
+ .instructions {
+   font-size: 18px;
+   margin-bottom: 16px;
+   line-height: 1.5;
+ }
+ 
+ /* Styling for ul itself */
+ .stepsList, .benefitsList {
+   margin-left: 20px;
+   margin-bottom: 16px;
+ }
+
+ /* This will be styling for every li under the list */
+ .stepsList li, .benefitsList li { 
+   margin-bottom: 10px;
+   font-size: 16px;
+   line-height: 1.5;
+ }
+ 
+ .link {
+   color: #0eaa45;
+   text-decoration: none;
+   transition: color 0.2s;
+ }
+ 
+ .link:hover {
+   text-decoration: underline;
+   color: #0c8a3e;
+ }
+ 
+ .imageContainer {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   margin: 20px 0;
+   width: 100%;
+ }
+ 
+ .instructionImage {
+   border-radius: 8px;
+   max-width: 100%;
+   height: auto;
+   border: 1px solid #333;
+   object-fit: contain;
+ }
+ 
+ .imageCaption {
+   margin-top: 8px;
+   font-size: 14px;
+   color: #a0a0a0;
+   text-align: center;
+ }

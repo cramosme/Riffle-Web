@@ -1,0 +1,110 @@
+/* Styles for the TimeRangeDropdown component */
+
+.container {
+   position: relative;
+   width: 150px;
+   z-index: 10;
+ }
+ 
+ .selector {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   width: 100%;
+   padding: 8px 12px;
+   background-color: #1a1a1a;
+   border-top-color: #0c8a3e;
+   border-left-color: #0c8a3e;
+   border-right-color: #0eaa45;
+   border-bottom-color: #0eaa45;
+   border-radius: 8px;
+   color: white;
+   font-family: 'Lato-Bold', sans-serif;
+   font-size: 14px;
+   cursor: pointer;
+ }
+ 
+ .selector:hover {
+   background-color: #222;
+ }
+ 
+ .arrow {
+   font-size: 10px;
+   color: #0eaa45;
+ }
+ 
+ .dropdown {
+   position: absolute;
+   top: calc(100% + 5px);
+   left: 0;
+   width: 100%;
+   background-color: #1a1a1a;
+   border-radius: 8px;
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+   list-style: none;
+   padding: 0;
+   margin: 0;
+   overflow: visible;
+ }
+ 
+ .option {
+   position: relative;
+   padding: 8px 12px;
+   color: white;
+   font-family: 'Lato-Bold', sans-serif;
+   font-size: 14px;
+   cursor: pointer;
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+ }
+ 
+ .option:hover:not(.disabled) {
+   background-color: #0c8a3e;
+ }
+ 
+ .option.selected {
+   background-color: #0eaa45;
+ }
+ 
+ .option.disabled {
+   color: #777;
+   cursor: not-allowed;
+ }
+ 
+ .lock {
+   margin-left: 6px;
+   font-size: 10px;
+ }
+ 
+ .tooltip {
+   position: absolute;
+   top: -40px;
+   left: 50%; 
+   transform: translateX(-50%);
+   background-color: #333;
+   color: white;
+   padding: 8px 12px;
+   border-radius: 4px;
+   font-size: 12px;
+   white-space: nowrap;
+   pointer-events: none;
+   z-index: 1000;
+   visibility: hidden;
+   width: max-content;
+ }
+
+ .option.disabled:hover .tooltip {
+   visibility: visible;
+ }
+ 
+ .tooltip::after {
+   content: '';
+   position: absolute;
+   top: 100%;
+   left: 50%;
+   margin-left: -5px;
+   border-width: 5px;
+   border-style: solid;
+   border-color: #333 transparent transparent transparent;
+ }

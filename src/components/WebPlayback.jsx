@@ -1,309 +1,234 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import styles from './webPlayback.module.css';
+import { useSpotify } from '@/context/SpotifyContext';
 
-const track = {
-    name: "",
-    album: {
-        images: [
-            { url: "" }
-        ]
-    },
-    artists: [
-        { name: "" }
-    ]
-}
+function WebPlayback({token, timeRange}) {
 
-function WebPlayback(props) {
-    const [is_paused, setPaused] = useState(false);
-    const [is_active, setActive] = useState(false);
-    const [player, setPlayer] = useState(undefined);
-    const [current_track, setTrack] = useState(track);
-    const [deviceId, setDeviceId] = useState("");
-    const [isReady, setIsReady] = useState(false);
+   const [trackStats, setTrackStats] = useState(null);
+   const [isLoadingStats, setIsLoadingStats] = useState(false);
+   const [statsError, setStatsError] = useState(null);
+   const [currentTrackId, setCurrentTrackId] = useState(null);
 
-    useEffect(() => {
-        if (!props.token) {
-            console.error("No token provided to WebPlayback component");
-            return;
-        }
+   function formatTime(seconds){
+      // Have to use isNaN bc i set the state to "" not a number
+      if(isNaN(seconds) || seconds < 0) return "0:00";
+      const msToSeconds = seconds/1000;
+      const minutes = Math.floor(msToSeconds/60);
+      const remainingSeconds = Math.round(msToSeconds%60);
 
-        // Check if the script is already loaded
-        if (!document.getElementById('spotify-player')) {
-            const script = document.createElement("script");
-            script.id = 'spotify-player';
-            script.src = "https://sdk.scdn.co/spotify-player.js";
-            script.async = true;
-
-            document.body.appendChild(script);
-        }
-
-        window.onSpotifyWebPlaybackSDKReady = () => {
-            console.log("Spotify Web Playback SDK Ready");
-            
-            const player = new window.Spotify.Player({
-                name: 'Riffle Web Player',
-                getOAuthToken: cb => { cb(props.token); },
-                volume: 0.25
-            });
-
-            setPlayer(player);
-
-            player.addListener('ready', ({ device_id }) => {
-                console.log('Ready with Device ID', device_id);
-                setDeviceId(device_id);
-                setIsReady(true);
-            });
-
-            player.addListener('not_ready', ({ device_id }) => {
-                console.log('Device ID has gone offline', device_id);
-                setIsReady(false);
-            });
-
-            player.addListener('player_state_changed', (state => {
-                if (!state) {
-                    return;
-                }
-
-                setTrack(state.track_window.current_track);
-                setPaused(state.paused);
-
-                player.getCurrentState().then(state => { 
-                    (!state) ? setActive(false) : setActive(true) 
-                }).catch(error => {
-                    console.error("Error getting current state:", error);
-                });
-            }));
-
-            // Connect player
-            player.connect().then(success => {
-                if (success) {
-                    console.log("Player connected successfully!");
-                } else {
-                    console.log("Failed to connect player");
-                }
-            }).catch(err => {
-                console.error("Error connecting player:", err);
-            });
-        };
-
-        // Cleanup function
-        return () => {
-            if (player) {
-                player.disconnect();
-            }
-        };
-    }, [props.token]);
-
-    // Function to transfer playback with volume matching
-    const transferPlayback = async () => {
-        if (!deviceId) {
-            console.log("No device ID available yet");
-            return;
-        }
-        
-        if (!isReady) {
-            console.log("Player is not ready yet");
-            return;
-        }
-        
-        try {
-            // First, get current volume from any active session
-            let spotifyVolume = 0.25; // Default fallback
-            
-            try {
-                const volumeResponse = await fetch("https://api.spotify.com/v1/me/player", {
-                    method: "GET",
-                    headers: {
-                        "Authorization": `Bearer ${props.token}`
-                    }
-                });
-                
-                if (volumeResponse.ok && volumeResponse.status !== 204) {
-                    const data = await volumeResponse.json();
-                    console.log("Playback data before transfer:", data);
-                    
-                    if (data && data.device && typeof data.device.volume_percent === "number") {
-                        spotifyVolume = (data.device.volume_percent / 100) * 0.8; // 80% adjustment
-                        console.log(`Found volume from active device: ${spotifyVolume}`);
-                    }
-                } else {
-                    console.log("No active playback found or status:", volumeResponse.status);
-                }
-            } catch (volumeError) {
-                console.log("Could not get volume, using default:", volumeError);
-            }
-            
-            // Then transfer playback
-            console.log("Transferring playback to device:", deviceId);
-            const response = await fetch("https://api.spotify.com/v1/me/player", {
-                method: "PUT",
-                headers: {
-                    "Authorization": `Bearer ${props.token}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    device_ids: [deviceId],
-                    play: true,
-                }),
-            });
-            
-            if (!response.ok) {
-                console.error("Error transferring playback. Status:", response.status);
-            } else {
-                console.log("Playback transferred successfully!");
-                
-                // Set volume after successful transfer
-                if (player) {
-                    // Add a small delay to ensure playback is transferred
-                    setTimeout(() => {
-                        console.log(`Setting volume to: ${spotifyVolume}`);
-                        player.setVolume(spotifyVolume).then(() => {
-                            console.log("Volume set successfully");
-                        }).catch(err => {
-                            console.error("Error setting volume:", err);
-                        });
-                    }, 1000);
-                }
-            }
-        } catch (error) {
-            console.error("Error transferring playback:", error);
-        }
-    };
-
-    // Safe handlers for player controls
-    const handlePreviousTrack = () => {
-        if (player && isReady) {
-            player.previousTrack().catch(err => {
-                console.error("Error skipping to previous track:", err);
-            });
-        }
-    };
-
-    const handleTogglePlay = () => {
-        if (player && isReady) {
-            player.togglePlay().catch(err => {
-                console.error("Error toggling play state:", err);
-            });
-        }
-    };
-
-    const handleNextTrack = () => {
-        if (player && isReady) {
-            player.nextTrack().catch(err => {
-                console.error("Error skipping to next track:", err);
-            });
-        }
-    };
-
-    // Show loading state when not ready
-    if (!isReady || !player) {
-        return;
-    }
-
-    // Not active state
-    if (!is_active) {
-        return (
-            <div className={styles.buttonContainer} onClick={transferPlayback}>
-               Play Music on Web
-            </div>
-        );
+      // If it rounds to 60 we need to change display
+      if( remainingSeconds == 60 ){
+         return`${minutes+1}:00`;
       }
 
-    // Active player state
-   //  return (
-   //      <div className={styles.mainWrapper}>
-   //          <div className={styles.coverContainer}>
-   //             <div className={styles.trackInfo}>
-   //                <img 
-   //                   src={current_track.album.images[0].url} 
-   //                   className={styles.nowPlayingCover} 
-   //                   alt="" 
-   //                />
+      // Pad seconds with a leading 0 if less than 10
+      const paddedSeconds = remainingSeconds < 10 ? `0${remainingSeconds}` : remainingSeconds;
 
-   //                <div className={styles.nowPlayingSide}>
-   //                   <div className={styles.nowPlayingArtist}>{current_track.artists[0].name}</div>
-   //                   <div className={styles.nowPlayingName}>{current_track.name}</div>
-   //                </div>
-   //             </div>
+      return `${minutes}:${paddedSeconds}`;
+   }
+   
+   try{
+      const { 
+         isReady,
+         isActive,
+         isPaused,
+         currentTrack,
+         error,
+         position,
+         transferPlayback,
+         handlePreviousTrack, 
+         handleTogglePlay,
+         handleNextTrack
+      } = useSpotify();
+   
+      // Fetch track statistics when currentTrack changes
+      useEffect(() => {
+         const fetchTrackStats = async () => {
+            if (!isActive || !currentTrack || !currentTrack["id"]) return;
 
-   //              <div className={styles.container}>
-   //                  <button 
-   //                      className={styles.btnSpotify}
-   //                      onClick={handlePreviousTrack}
-   //                  >
-   //                      &lt;&lt;
-   //                  </button>
+            // Only fetch if it's a new track
+            if(currentTrack["id"] === currentTrackId) return;
+            
+            setCurrentTrackId(currentTrack["id"]);
+            setIsLoadingStats(true);
+            setStatsError(null);
+            
+            try {
+               const userId = localStorage.getItem('user_id');
+               const token = localStorage.getItem("access_token");
+               const response = await fetch(`http://localhost:3000/track-stats/${userId}/${currentTrack["id"]}`, {
+                  headers: {
+                     "Authorization": `Bearer ${token}`
+                  }
+               });
+               
+               if (!response.ok) {
+                  throw new Error('Failed to fetch track statistics');
+               }
+               
+               const data = await response.json();
+               setTrackStats(data);
+            } catch (error) {
+               console.error('Error fetching track statistics:', error);
+               setStatsError('Could not load track statistics');
+            } finally {
+               setIsLoadingStats(false);
+            }
+         };
+         
+         fetchTrackStats();
+      }, [isActive, currentTrack]);
 
-   //                  <button 
-   //                      className={styles.btnSpotify}
-   //                      onClick={handleTogglePlay}
-   //                  >
-   //                      {is_paused ? "PLAY" : "PAUSE"}
-   //                  </button>
-
-   //                  <button 
-   //                      className={styles.btnSpotify} 
-   //                      onClick={handleNextTrack}
-   //                  >
-   //                      &gt;&gt;
-   //                  </button>
-   //              </div>
-   //          </div>
-   //       </div>   
-   //  );
-   // Active player state with improved structure
-    return (
-        <div className={styles.mainWrapper}>
-            <div className={styles.coverContainer}>
-                <div className={styles.trackInfo}>
-                    <div className={styles.albumColumn}>
-                        <img 
-                            src={current_track.album.images[0].url} 
-                            className={styles.nowPlayingCover} 
-                            alt={`Album cover for ${current_track.name}`} 
-                        />
-                    </div>
-                    <div className={styles.nowPlayingSide}>
-                        <div className={styles.nowPlayingArtist}>
-                            {current_track.artists.map((artist, index) => (
-                                <span key={index}>
-                                    {index > 0 ? ", " : ""}
-                                    {artist.name}
-                                </span>
-                            ))}
-                        </div>
-                        <div className={styles.nowPlayingName}>{current_track.name}</div>
-                    </div>
-                </div>
-
-                <div className={styles.container}>
-                    <button 
-                        className={styles.btnSpotify}
-                        onClick={handlePreviousTrack}
-                        aria-label="Previous track"
-                    >
-                        &lt;&lt;
-                    </button>
-
-                    <button 
-                        className={styles.btnSpotify}
-                        onClick={handleTogglePlay}
-                        aria-label={is_paused ? "Play" : "Pause"}
-                    >
-                        {is_paused ? "PLAY" : "PAUSE"}
-                    </button>
-
-                    <button 
-                        className={styles.btnSpotify} 
-                        onClick={handleNextTrack}
-                        aria-label="Next track"
-                    >
-                        &gt;&gt;
-                    </button>
-                </div>
+      // Loading state
+      if (!isReady) {
+         // return;
+         return (
+            <div className={styles.loadingContainer}>
+              Loading player...
             </div>
-        </div>   
-    );
+          );
+      }
+   
+      // Error state
+      if (error) {
+         return (
+            <div className={styles.errorContainer}>
+            <p>{error}</p>
+            <button 
+               className={styles.retryButton} 
+               onClick={() => window.location.reload()}
+            >
+               Retry
+            </button>
+            </div>
+         );
+      }
+   
+      // Not active state
+      if (!isActive) {
+         return (
+            <div className={styles.buttonContainer} onClick={transferPlayback}>
+            Play Music on Web
+            </div>
+         );
+      }
+      
+      // Active playback state
+      return (
+         <div className={styles.playerContainer}>
+            {/* Left section: Album image and controls */}
+            <div className={styles.albumSection}>
+               <img 
+                  src={currentTrack.album.images[0].url} 
+                  className={styles.albumCover} 
+                  alt={`Album cover for ${currentTrack.name}`} 
+               />
+               <div className={styles.controls}>
+                  <button className={styles.controlButton} onClick={handlePreviousTrack}>
+                     &lt;&lt;
+                  </button>
+                  <button className={styles.controlButton} onClick={handleTogglePlay}>
+                     {isPaused ? "PLAY" : "PAUSE"}
+                  </button>
+                  <button className={styles.controlButton} onClick={handleNextTrack}>
+                     &gt;&gt;
+                  </button>
+               </div>
+            </div>
+            
+            {/* Middle section: Track info */}
+            <div className={styles.infoContainer}>
+               <div className={styles.trackDetails}>
+                  <div className={styles.artistName}>
+                     {currentTrack.artists.map((artist, index) => (
+                        <span key={index}>
+                           {index > 0 ? ", " : ""}
+                           {artist.name}
+                        </span>
+                     ))}
+                  </div>
+                  <div className={styles.trackName}>{currentTrack.name}</div>
+               </div>
+               
+               {/* Progress bar */}
+               <div className={styles.progressSpace}>
+                  <div className={styles.progressBarContainer}>
+                     <div 
+                        className={styles.progressBar} 
+                        style={{width: trackStats && trackStats.trackDuration ? 
+                           `${(position / trackStats.trackDuration) * 100}%` : '0%'
+                        }}
+                     />   
+                  </div>
+                  <div className={styles.progressTimeContainer}>
+                     <span>{formatTime(position)}</span>
+                     <span>{trackStats ? formatTime(trackStats.trackDuration) : '0:00'}</span>
+                  </div>
+               </div>
+            </div>
+            
+            {/* Right section: Track stats */}
+            <div className={styles.statsContainer}>
+               {isLoadingStats ? (
+                  <p className={styles.loadingStats}>Loading stats...</p>
+               ) : statsError ? (
+                  <p className={styles.statsError}>{statsError}</p>
+               ) : trackStats ? (
+                  trackStats.isFirstPlay ? (
+                     <div className={styles.firstPlay}>
+                        First time listening!
+                        <div style={{ fontSize: '14px', marginTop: '6px' }}>
+                           Replay the song to view updated stats.
+                        </div>
+                     </div>
+                  ) : (
+                     <>
+                        <div className={styles.statsRow}>
+                           {timeRange === "lifetime" && (
+                              <div className={styles.statItem}>
+                                 <span className={styles.statLabel}>Rank:</span>
+                                 <span className={styles.statValue}>
+                                    N/A
+                                    <span className={styles.rankTooltip}>
+                                    Based on sorting method
+                                    </span>
+                                 </span>
+                              </div>
+                           )}
+                           <div className={styles.statItem}>
+                              <span className={styles.statLabel}>Skips:</span>
+                              <span className={styles.statValue}>{trackStats.skipCount}</span>
+                           </div>
+                        </div>
+                        <div className={styles.statsRow}>
+                           <div className={styles.statItem}>
+                              <span className={styles.statLabel}>Plays:</span>
+                              <span className={styles.statValue}>{trackStats.listenCount}</span>
+                           </div>
+                           <div className={styles.statItem}>
+                              <span className={styles.statLabel}>Minutes:</span>
+                              <span className={styles.statValue}>
+                                 {trackStats.minutesListened.toFixed(1)}
+                              </span>
+                           </div>
+                        </div>
+                     </>
+                  )
+               ) : null}
+            </div>
+         </div>
+      );
+   } catch (error) {
+      // Fallback if context isn't available
+      console.error("Spotify context error:", error);
+      return (
+         <div className={styles.buttonContainer} onClick={() => window.location.reload()}>
+            Spotify Player Unavailable - Click to Reload
+         </div>
+      );
+   }
 }
 
 export default WebPlayback;

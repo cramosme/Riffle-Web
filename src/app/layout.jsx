@@ -8,6 +8,8 @@ import styles from './layout.module.css';
 import { isUserLoggedIn, getLoggedInUserId } from '@/utils/auth';
 import ProfileDropdown from '@/components/ProfileDropdown';
 import BackgroundParticles from '@/components/BackgroundParticles';
+import { SpotifyProvider } from '@/context/SpotifyContext';
+import { ImportProvider } from '@/context/ImportContext';
 import './globals.css';
 import { useEffect, useState } from 'react';
 
@@ -18,6 +20,7 @@ export default function RootLayout({ children }) {
    const [isLoggedIn, setIsLoggedIn] = useState(false);
    const [userId, setUserId] = useState(null);
    const [profileImage, setProfileImage] = useState(null);
+   const [userName, setUserName] = useState(null);
 
    // Function to check access token and refresh token if needed
    const checkAndRefreshToken = async () => {
@@ -71,6 +74,7 @@ export default function RootLayout({ children }) {
                setIsLoggedIn(false);
                setUserId(null);
                setProfileImage(null);
+               setUserName(null);
 
             }
          }
@@ -85,6 +89,7 @@ export default function RootLayout({ children }) {
          setIsLoggedIn(false);
          setUserId(null);
          setProfileImage(null);
+         setUserName(null);
       }
    }
 
@@ -115,6 +120,7 @@ export default function RootLayout({ children }) {
    // Helper to check if we're on a specific route type
    const isStatsRoute = pathname?.includes('/stats/');
    const isSettingsRoute = pathname?.includes('/settings/');
+   const isImportRoute = pathname?.includes('/import/');
    const isIndexRoute = pathname === '/';
 
    useEffect(() => {
@@ -127,8 +133,11 @@ export default function RootLayout({ children }) {
             if (loggedIn) {
                const storedUserId = getLoggedInUserId();
                const storedProfilePic = localStorage.getItem('profile_pic');
+               const storedUserName = localStorage.getItem("display_name");
+
                setUserId(storedUserId);
                setProfileImage(storedProfilePic);
+               setUserName(storedUserName || "");
                // Log token expiry information
                logTokenExpiry();
             }
@@ -146,65 +155,56 @@ export default function RootLayout({ children }) {
       return () => clearInterval(interval);
    }, []);
 
-  return (
-    <html lang="en" className={styles.html}>
-      <head>
-        <title>Riffle</title>
-        <meta httpEquiv="Content-Language" content="en" />
-        <meta name="google" content="notranslate" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="icon" href="/images/riffle_logo.png" />
-      </head>
-      <body className={styles.body}>
-         <BackgroundParticles/>
-        <header className={styles.header}>
-            {/* Logo and title on the left */}
-            <Link href="/" className={styles.logoContainer}>
-                  <Image 
-                     src="/images/riffle_logo.png" 
-                     alt="Riffle Logo" 
-                     width={50} 
-                     height={50}
-                     className={styles.logoImage}
-                  />
-                  <span className={styles.logoText}>
-                     Riffle
-                  </span>
-            </Link>
-          
-          {/* Navigation links or auth button on the right */}
-          <div className={styles.navContainer}>
-            {isIndexRoute && authChecked && ( isLoggedIn ? (
-               <ProfileDropdown userId={userId} profileImageUrl={profileImage} />
-            ) : (
-               <SpotifyAuthWithPKCE/>
-            )
-            )}
-            
-            {isStatsRoute && (
-              <Link 
-                href={pathname?.replace('/stats/', '/settings/')} 
-                className={styles.navLink}
-              >
-                Settings
-              </Link>
-            )}
-            
-            {isSettingsRoute && (
-              <Link 
-                href={pathname?.replace('/settings/', '/stats/')} 
-                className={styles.navLink}
-              >
-                Stats
-              </Link>
-            )}
-          </div>
-        </header>
-        
-        <main className={styles.main}>
-          {children}
-        </main>
-      </body>
-    </html>
-  );
+   // Wrap the application with SpotifyProvider only if the user is logged in
+   const wrappedChildren = isLoggedIn && authChecked ? (
+      <SpotifyProvider>
+         <ImportProvider>
+            {children}
+         </ImportProvider>
+      </SpotifyProvider>
+   ) : children;
+
+   return (
+      <html lang="en" className={styles.html}>
+         <head>
+         <title>Riffle</title>
+         <meta httpEquiv="Content-Language" content="en" />
+         <meta name="google" content="notranslate" />
+         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+         <link rel="icon" href="/images/riffle_logo.png" />
+         </head>
+         <body className={styles.body}>
+            <BackgroundParticles/>
+            <header className={styles.header}>
+               {/* Logo and title on the left */}
+               <Link href="/" className={styles.logoContainer}>
+                     <Image 
+                        src="/images/riffle_logo.png" 
+                        alt="Riffle Logo" 
+                        width={50} 
+                        height={50}
+                        className={styles.logoImage}
+                     />
+                     <span className={styles.logoText}>
+                        Riffle
+                     </span>
+               </Link>
+               
+               {/* Navigation links or auth button on the right */}
+               <div className={styles.navContainer}>
+                  {authChecked && isLoggedIn ? (
+                     <ProfileDropdown userId={userId} profileImageUrl={profileImage} userName={userName} />
+                  ) : (
+                     authChecked && !isLoggedIn && isIndexRoute && (
+                        <SpotifyAuthWithPKCE/>
+                     )
+                  )}
+               </div>
+            </header>
+            <main className={styles.main}>
+               {wrappedChildren}
+            </main>
+         </body>
+      </html>
+   );
 }

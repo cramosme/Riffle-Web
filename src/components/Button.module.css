@@ -5,7 +5,6 @@
    border: none;
    border-radius: 15px;
    padding: 12px 20px;
-   margin-right: 40px;
    display: flex;
    align-items: center;
    justify-content: center;
@@ -13,32 +12,72 @@
    font-family: "Lato-Bold", sans-serif;
    color: #fff;
    cursor: pointer;
-   transition: background-color 0.2s;
+   z-index: 10;
+}
+
+.button.primaryLogin:hover {
+   background-color: #0c8a3e;
+}
+
+.button.primaryLogout:hover {
+   background-color: #0c8a3e;
+}
+
+.button.danger:hover {
+   background-color: #962013;
 }
 
 /* Helps with multiple buttons */
 .buttonsContainer {
    display: flex;
-   flex-direction: column;
+   flex-direction: row;
    gap: 20px;
-   margin-top: 40px;
-   width: 200px;
 }
  
  /* Styles specific to default button (login/logout) */
-.primary {
+.primaryLogout {
+   min-width: 200px;
    background-color: #0eaa45;
 }
  
-.primary:active {
+.primaryLogout:active {
+   background-color: #0c8a3e;
+}
+
+.primaryLogin {
+   margin-right: 50px;
+   background-color: #0eaa45;
+}
+ 
+.primaryLogin:active {
    background-color: #0c8a3e;
 }
  
  /* Styles specific to destructive buttons (delete account) */
 .danger {
-   background-color: #e74c3c;
+   min-width: 200px;
+   background-color: #b62919;
 }
  
 .danger:active {
    background-color: #c0392b;
+}
+
+.secondary {
+   min-width: 200px;
+   background-color: #555;
+   color: white;
+}
+
+.secondary:hover {
+   background-color: #666;
+}
+
+.secondary:active {
+   background-color: #444;
+}
+
+.secondary:disabled {
+   background-color: #333;
+   cursor: not-allowed;
 }

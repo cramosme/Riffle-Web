@@ -12,6 +12,7 @@
    left: 0;
    right: 0;
    padding-left: 25px;
+   z-index: 1000;
 }
 
 .logoContainer {
@@ -21,28 +22,23 @@
 }
 
 .logoImage {
-   margin-left: 40px;
+   margin-left: 50px;
 }
 
 .logoText {
    padding: 0 10px;
-   font-size: 25px;
+   font-size: 24px;
    font-weight: bold;
    color: white;
    font-family: 'Lato-Bold', Arial, sans-serif;
+}
+
+.logoText:hover {
+   color:#0eaa45;
 }
 
 .navContainer {
    margin-right: 40px;
-}
-
-.navLink {
-   margin-right: 40px;
-   font-size: 25px;
-   font-weight: bold;
-   color: white;
-   font-family: 'Lato-Bold', Arial, sans-serif;
-   text-decoration: none;
 }
 
 .html {
