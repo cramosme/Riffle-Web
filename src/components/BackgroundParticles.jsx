@@ -36,7 +36,7 @@ export default function BackgroundParticles() {
                },
                modes: {
                   push: {
-                     quantity: 4,
+                     quantity: 10,
                   },
                   repulse: {
                      distance: 100,
@@ -70,7 +70,8 @@ export default function BackgroundParticles() {
                      enable: true,
                      area: 800,
                   },
-                  value: 60,
+                  value: 30,
+                  max: 100,
                },
                opacity: {
                   value: 0.5,
