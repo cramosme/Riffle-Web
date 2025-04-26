@@ -257,3 +257,10 @@
    cursor: pointer;
    font-family: "Lato-Bold", sans-serif;
 }
+
+.currentListen {
+   color: #0eaa45;
+   margin-left: 5px;
+   font-size: 14px;
+   font-weight: normal;
+}
