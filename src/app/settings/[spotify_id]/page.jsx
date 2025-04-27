@@ -7,12 +7,15 @@ import buttonStyles from "@/components/Button.module.css";
 
 export default function Settings() {
    const [skipThreshold, setSkipThreshold] = useState("");
+   const [minMinutesThreshold, setMinMinutesThreshold] = useState("");
    const [originalThreshold, setOriginalThreshold] = useState("");
+   const [originalMinMinutes, setOriginalMinMinutes] = useState("");
    const [isSaving, setIsSaving] = useState(false);
    const [saveMessage, setSaveMessage] = useState(null);
    const [userId, setUserId] = useState(null);
    const [hasChanges, setHasChanges] = useState(false);
    const [inputError, setInputError] = useState("");
+   const [minutesInputError, setMinutesInputError] = useState("");
 
    // Fetch current settings
    useEffect(() => {
@@ -26,6 +29,7 @@ export default function Settings() {
                const data = await response.json();
                // Don't set the input value, just set the original threshold for comparison
                setOriginalThreshold(data["settings"]["skip_threshold"]);
+               setOriginalMinMinutes(data["settings"]["min_minutes_threshold"]);
             }
          } catch(error){
             console.error("Error fetching settings:", error);
@@ -38,8 +42,10 @@ export default function Settings() {
    // Update hasChanges whenever skipThreshold changes
    useEffect(() => {
       // Check if the input is not empty and different from original value
-      setHasChanges(skipThreshold !== "" && parseInt(skipThreshold) !== originalThreshold);
-   }, [skipThreshold, originalThreshold]);
+      const skipChanged = skipThreshold !== "" && parseInt(skipThreshold) !== originalThreshold;
+      const minutesChanged = minMinutesThreshold !== "" && parseFloat(minMinutesThreshold) !== originalMinMinutes;
+      setHasChanges(skipChanged || minutesChanged);
+   }, [skipThreshold, minMinutesThreshold, originalThreshold, originalMinMinutes]);
 
    const handleSkipThresholdChange = (e) => {
       const value = e.target.value;
@@ -68,10 +74,44 @@ export default function Settings() {
       setInputError("");
    }
 
+   const handleMinMinutesChange = (e) => {
+      const value = e.target.value;
+      
+      // Allow empty input for typing purposes
+      if (value === "") {
+         setMinMinutesThreshold("");
+         setMinutesInputError("");
+         return;
+      }
+      
+      // Convert to number and validate
+      const numValue = parseFloat(value);
+      
+      if (isNaN(numValue)) {
+         setMinutesInputError("Please enter a valid number");
+         return;
+      }
+      
+      if (numValue < 0) {
+         setMinutesInputError("Value must be greater than or equal to 0");
+         return;
+      }
+      
+      if (numValue > 30) {
+         setMinutesInputError("Value must be 30 minutes or less");
+         return;
+      }
+      
+      setMinMinutesThreshold(numValue);
+      setMinutesInputError("");
+   }
+
    // Function to cancel changes and revert to original values
    const handleCancel = () => {
       setSkipThreshold("");
+      setMinMinutesThreshold("");
       setInputError("");
+      setMinutesInputError("");
       setSaveMessage({
          type: "info",
          text: "Changes cancelled"
@@ -81,9 +121,12 @@ export default function Settings() {
 
    // Function to save settings
    const handleSaveSettings = async () => {
-      // Validate input before saving
-      if (skipThreshold === "") {
-         setInputError("Please enter a value");
+      // Skip validation if no changes were made to that field
+      if (skipThreshold && inputError) {
+         return;
+      }
+      
+      if (minMinutesThreshold && minutesInputError) {
          return;
       }
 
@@ -102,7 +145,16 @@ export default function Settings() {
 
       try {
          const token = localStorage.getItem("access_token");
-         console.log(`Sending ${skipThreshold} to backend`);
+         
+         // Build the update object with only changed fields
+         const updateData = {};
+         if (skipThreshold !== "") {
+            updateData.skip_threshold = skipThreshold;
+         }
+         if (minMinutesThreshold !== "") {
+            updateData.min_minutes_threshold = minMinutesThreshold;
+         }
+
          // Update settings in the database
          const response = await fetch(`http://localhost:3000/settings/${userId}`, {
             method: "PUT",
@@ -110,15 +162,23 @@ export default function Settings() {
                "Content-Type": "application/json",
                "Authorization": `Bearer ${token}`
             },
-            body: JSON.stringify({
-               skip_threshold: skipThreshold
-            })
+            body: JSON.stringify(updateData)
          });
 
          if (response.ok) {
             const data = await response.json();
-            setOriginalThreshold(parseInt(skipThreshold));
-            setSkipThreshold(""); // Clear the input after saving
+
+            // Update original values for comparison
+            if (skipThreshold !== "") {
+               setOriginalThreshold(parseInt(skipThreshold));
+            }
+            if (minMinutesThreshold !== "") {
+               setOriginalMinMinutes(parseFloat(minMinutesThreshold));
+            }
+            
+            // Clear inputs
+            setSkipThreshold("");
+            setMinMinutesThreshold("");
             
             // Show success message, including recalculation stats if available
             setSaveMessage({
@@ -205,6 +265,32 @@ export default function Settings() {
                <p className={styles.settingDescription}>
                   Tracks played less than this percentage will be counted as skipped.
                   Enter a value between 1 and 100.
+               </p>
+            </div>
+
+            {/* Minimum minutes setting */}
+            <div className={styles.settingItem}>
+               <label htmlFor="minMinutesThreshold" className={styles.settingLabel}>
+                  Minimum Minutes Threshold
+               </label>
+               <div className={styles.settingControl}>
+                  <input
+                     type="text"
+                     id="minMinutesThreshold"
+                     value={minMinutesThreshold}
+                     onChange={handleMinMinutesChange}
+                     className={styles.textInput}
+                     placeholder={originalMinMinutes.toString()}
+                  />
+                  {minutesInputError && (
+                     <div className={styles.inputError}>
+                        {minutesInputError}
+                     </div>
+                  )}
+               </div>
+               <p className={styles.settingDescription}>
+                  When importing your Spotify history, tracks with less than this number of minutes 
+                  listened will be excluded.
                </p>
             </div>
             

@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import styles from "./ImportHistory.module.css";
 import { useImport } from "@/context/ImportContext";
 
@@ -23,6 +24,8 @@ export default function ImportHistory({ userId }) {
    const [isDragging, setIsDragging] = useState(false);
    const [uploadStatus, setUploadStatus] = useState("idle");
    const [uploadError, setUploadError] = useState(null);
+   const [minMinutesThreshold, setMinMinutesThreshold] = useState("");
+   const [settingsConfirmed, setSettingsConfirmed] = useState(false);
 
    // Reset component stat when import process is reset
    useEffect( () => {
@@ -30,8 +33,31 @@ export default function ImportHistory({ userId }) {
          setUploadStatus("idle");
          setFiles([]);
          setUploadError(null);
+         setSettingsConfirmed(false);
       }
    }, [processStatus, uploadStatus]);
+
+   // Fetch user's current min_minutes_threshold setting
+   useEffect(() => {
+      if (userId) {
+         fetchUserSettings();
+      }
+   }, [userId]);
+
+   const fetchUserSettings = async () => {
+      try {
+         const response = await fetch(`http://localhost:3000/settings/${userId}`);
+         
+         if (response.ok) {
+            const data = await response.json();
+            if (data.settings && data.settings.min_minutes_threshold !== undefined) {
+               setMinMinutesThreshold(data.settings.min_minutes_threshold);
+            }
+         }
+      } catch (error) {
+         console.error("Error fetching user settings:", error);
+      }
+   };
 
    const handleDragOver = (e) => {
       e.preventDefault();
@@ -67,6 +93,10 @@ export default function ImportHistory({ userId }) {
       setFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
    };
 
+   const handleSettingsConfirmedToggle = () => {
+      setSettingsConfirmed(!settingsConfirmed);
+   };
+
    const handleUpload = async () => {
       if (files.length === 0) {
          return;
@@ -74,6 +104,12 @@ export default function ImportHistory({ userId }) {
          
       if (!userId) {
          console.error("Cannot upload: userId is not set");
+         return;
+      }
+
+      // Require settings confirmation before upload
+      if(!settingsConfirmed){
+         setUploadError("Please confirm the import settings before uploading");
          return;
       }
 
@@ -119,6 +155,7 @@ export default function ImportHistory({ userId }) {
       resetImportState();
       setUploadStatus("idle");
       setUploadError(null);
+      setSettingsConfirmed(false);
    }
 
    const readFileAsJSON = (file) => {
@@ -228,6 +265,7 @@ export default function ImportHistory({ userId }) {
                   <p>Processed {statsData.totalProcessed} entries</p>
                   <p>Skipped {statsData.totalSkipped} entries (no track URI)</p>
                   <p>Imported {statsData.uniqueTracks} unique tracks</p>
+                  <p>Removed {statsData.tracksUnderThreshold} tracks under the {minMinutesThreshold} minute threshold</p>
                </div>
                
                <button 
@@ -327,6 +365,28 @@ export default function ImportHistory({ userId }) {
                      </li>
                   ))}
                </ul>
+
+               <div className={styles.settingsSummary}>
+                  <p>Current import settings:</p>
+                  <p style={{marginTop: "8px"}}>Excluding tracks with less than <span className={styles.thresholdValue}>{minMinutesThreshold}</span> minute{minMinutesThreshold !== 1 ? 's' : ''} listened</p>
+                  <p style={{fontSize: "14px", marginTop: "8px", color: "#aaa"}}>
+                     <Link href={`/settings/${userId}`} className={styles.settingsLink}>
+                        Adjust these settings
+                     </Link> before proceeding if needed.
+                  </p>
+                  
+                  <div className={styles.confirmContainer}>
+                     <label className={styles.confirmLabel}>
+                        <input 
+                           type="checkbox" 
+                           checked={settingsConfirmed}
+                           onChange={handleSettingsConfirmedToggle}
+                           className={styles.confirmCheckbox}
+                        />
+                        I confirm these import settings
+                     </label>
+                  </div>
+               </div>
                
                <button 
                   onClick={handleUpload} 

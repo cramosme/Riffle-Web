@@ -8,6 +8,7 @@ import TimeRangeDropdown from '@/components/TimeRangeDropdown';
 import SortingDropdown from '@/components/SortingDropdown';
 import ShowAllButton from '@/components/ShowAllButton';
 import LoadMoreButton from '@/components/LoadMoreButton';
+import OrderButton from '@/components/OrderButton';
 
 export default function Stats() {
    const [profileData, setProfileData] = useState(null);
@@ -23,6 +24,7 @@ export default function Stats() {
    const [trackOffset, setTrackOffset] = useState(0);
    const [isLoadingMore, setIsLoadingMore] = useState(false);
    const [hasMoreTracks, setHasMoreTracks] = useState(true);
+   const [ascending, setAscending] = useState(false);
 
    // Helper function to add commas to follower count
    const formatNumberWithCommas = (number) => {
@@ -61,7 +63,7 @@ export default function Stats() {
          setHasMoreTracks(true);
          fetchUserData(timeRange, sortMethod);
       }
-   }, [timeRange, sortMethod, token]);
+   }, [timeRange, sortMethod, ascending, token]);
 
    async function checkImportStatus() {
       try{
@@ -97,23 +99,25 @@ export default function Stats() {
                setTrackOffset(0);
             }
 
-            const cachedData = localStorage.getItem(`lifetime_data_${sortMethod}`);
-            const cachedTimeStamp = localStorage.getItem(`lifetime_data_timestamp_${sortMethod}`);
+            const cachedData = localStorage.getItem(`lifetime_data_${sortMethod}_${ascending}`);
+            const cachedTimeStamp = localStorage.getItem(`lifetime_data_timestamp_${sortMethod}_${ascending}`);
             
             const isCacheValid = cachedData && cachedTimeStamp && (Date.now() - parseInt(cachedTimeStamp) < 60 * 60 * 1000); // checks if values are null and checks if time is less than 1 hours
 
             if( isCacheValid ){
                const parsedData = JSON.parse(cachedData);
-               console.log(`Using cached lifetime data sorted by ${sortMethod}`);
+               console.log(`Using cached lifetime data sorted by ${sortMethod} in ${ascending ? 'ascending' : 'descending'} order`);
                setTrackData(parsedData);
                return;
             }
 
             // If cache is invalid fetch from backend
-            console.log(`Fetching lifetime data sorted by ${sortMethod}`);
+            console.log(`Fetching lifetime data sorted by ${sortMethod} in ${ascending ? 'ascending' : 'descending'} order`);
 
             try{
-               const response = await fetch(`http://localhost:3000/lifetime-stats/${userId}?sort=${sortMethod}&offset=0`, requestOptions);
+               const ascendingParam = ascending.toString();
+
+               const response = await fetch(`http://localhost:3000/lifetime-stats/${userId}?sort=${sortMethod}&offset=0&ascending=${ascendingParam}`, requestOptions);
 
                if( response.ok ){
                   const lifetimeData = await response.json();
@@ -124,10 +128,10 @@ export default function Stats() {
                   // Update hasMoreTracks based on pagination result
                   setHasMoreTracks(lifetimeData.pagination.hasMore);
 
-                  localStorage.setItem(`lifetime_data_${sortMethod}`, JSON.stringify(lifetimeData.tracks));
-                  localStorage.setItem(`lifetime_data_timestamp_${sortMethod}`, Date.now().toString());
+                  localStorage.setItem(`lifetime_data_${sortMethod}_${ascending}`, JSON.stringify(lifetimeData.tracks));
+                  localStorage.setItem(`lifetime_data_timestamp_${sortMethod}_${ascending}`, Date.now().toString());
 
-                  console.log(`Cached lifetime data sorted by ${sortMethod}`);
+                  console.log(`Cached lifetime data sorted by ${sortMethod} in ${ascending ? 'ascending' : 'descending'} order`);
                }
                else{
                   console.error("Error fetching lifetime data:", response.status);
@@ -192,8 +196,11 @@ export default function Stats() {
          const token = localStorage.getItem("access_token");
          const nextOffset = trackOffset + 50;
          
+         // Convert boolean to string for URL parameter
+         const ascendingParam = ascending.toString();
+
          // Fetch the next batch of tracks
-         const response = await fetch( `http://localhost:3000/lifetime-stats/${userId}?sort=${sortMethod}&offset=${nextOffset}`, {
+         const response = await fetch( `http://localhost:3000/lifetime-stats/${userId}?sort=${sortMethod}&offset=${nextOffset}&ascending=${ascendingParam}`, {
             headers: {
                'Authorization': `Bearer ${token}`
             }
@@ -225,8 +232,8 @@ export default function Stats() {
             setTrackOffset(nextOffset);
             
             // Update the cache
-            localStorage.setItem(`lifetime_data_${sortMethod}`, JSON.stringify(combinedTracks));
-            localStorage.setItem(`lifetime_data_timestamp_${sortMethod}`, Date.now().toString());
+            localStorage.setItem(`lifetime_data_${sortMethod}_${ascending}`, JSON.stringify(combinedTracks));
+            localStorage.setItem(`lifetime_data_timestamp_${sortMethod}_${ascending}`, Date.now().toString());
             
             console.log(`Loaded ${moreTracksData.tracks.items.length} more tracks, new total: ${combinedTracks.items.length}`);
          } else {
@@ -264,6 +271,10 @@ export default function Stats() {
 
    const handleLoadMoreTracks = () => {
       loadMoreTracks();
+   }
+
+   const handleOrderChange = (ascending) => {
+      setAscending(ascending);
    }
 
    // Handle user selecting top track to fill in web playback
@@ -381,10 +392,14 @@ export default function Stats() {
                ) : (
                   <>
                      <div className={styles.displayTitle}>
-                        <p className={styles.lifetimeTitle}>Lifetime Top Tracks</p>
+                        <p className={styles.lifetimeTitle}>Top Tracks</p>
                         <SortingDropdown
                            selectedMethod={sortMethod}
                            onChange={handleSortingChange}
+                        />
+                        <OrderButton
+                           isAscending={ascending}
+                           onChange={handleOrderChange}
                         />
                      </div>
                      <div className={styles.cardContainer}>

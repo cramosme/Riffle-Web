@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import styles from './TimeRangeDropdown.module.css';
+import styles from './SortingDropdown.module.css';
 
 export default function SortingDropdown({selectedMethod, onChange}) {
    const [isOpen, setIsOpen] = useState(false);

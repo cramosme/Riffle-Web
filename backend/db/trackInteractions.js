@@ -302,15 +302,31 @@ async function recalculateCounts(userId, newThreshold) {
 }
 
 // Function that will help cleanup tracks with no useful information
-async function removeZeroListenedTracks(userId) {
+async function removeTracksUnderThreshold(userId) {
    try{
+
+      // First get the user's threshold settings
+      const { data: settings, error: settingsError } = await supabase
+         .from('Settings')
+         .select('min_minutes_threshold')
+         .eq('user_id', userId)
+         .single();
+
+      if (settingsError) {
+         console.error("Error fetching min_minutes_threshold:", settingsError);
+         return { error: settingsError };
+      }
+
+      // Get the threshold value
+      const minMinutesThreshold = settings["min_minutes_threshold"];
+      console.log(`Using minimum minutes threshold: ${minMinutesThreshold}`);
 
       // Count how many records will be removed
       const { count, error: countError } = await supabase
          .from('Track Interactions')
          .select('*', { count: 'exact', head: true })
          .eq('user_id', userId)
-         .eq('minutes_listened', 0);
+         .lt('minutes_listened', minMinutesThreshold);
 
       if (countError) {
          console.error("Error counting zero-listened tracks:", countError);
@@ -325,7 +341,7 @@ async function removeZeroListenedTracks(userId) {
          .from("Track Interactions")
          .delete()
          .eq("user_id", userId)
-         .eq("minutes_listened", 0)
+         .lt("minutes_listened", minMinutesThreshold)
          .select();
 
       if( error ){
@@ -341,4 +357,4 @@ async function removeZeroListenedTracks(userId) {
    }
 }
 
-module.exports = { upsertTrackInteractions, updateTrackInteraction, calculateMinutesListened, recalculateCounts, removeZeroListenedTracks };
+module.exports = { upsertTrackInteractions, updateTrackInteraction, calculateMinutesListened, recalculateCounts, removeTracksUnderThreshold};
