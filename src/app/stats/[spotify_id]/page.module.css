@@ -21,7 +21,7 @@
    z-index: 1;
  }
 
-.sectionTitle {
+.sectionTitle, .lifetimeTitle {
    font-size: 30px;
    padding: 20px 0;
    color: white;
@@ -32,14 +32,7 @@
 }
 
 .lifetimeTitle {
-   font-size: 30px;
-   padding: 20px 0;
-   color: white;
-   width: 100%;
-   margin-left: 100px;
-   font-family: 'Lato-Bold', sans-serif;
-   position:relative;
-   text-align: center;
+   left: 7%;
 }
 
 .sectionTitle {
