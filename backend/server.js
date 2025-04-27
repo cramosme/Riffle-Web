@@ -837,6 +837,74 @@ app.post('/track-interaction/:userId/:trackId', async (req, res) => {
    }
 });
 
+// Endpoint to fetch lifetime tracks from the database
+app.get('/lifetime-stats/:userId', async (req, res) => {
+
+   const userId = req.params.userId;
+   const sortMethod = req.query.sort || "listen_count";
+
+   try{
+
+      // Error checking just in case
+      const validSortMethods = ["listen_count", "skip_count", "minutes_listened"];
+      if( !validSortMethods.includes(sortMethod) ){
+         return res.status(400).json({error: "Invalid sort method"});
+      }
+
+      // Get top tracks with stats
+      // The select statement is basically doing: for each track interaction, also fetch the related track information
+      // Have to do this because track interactions table doesnt have information regarding track, only stats for that track
+      const { data: trackData, error: trackError } = await supabase
+         .from("Track Interactions")
+         .select(`
+            track_id,
+            listen_count,
+            skip_count,
+            minutes_listened,
+            Tracks (
+               track_name,
+               artist,
+               album_image
+            )
+         `)
+         .eq("user_id", userId)
+         .order(sortMethod, {ascending: false})
+         .limit(50);
+
+      if( trackError ){
+         console.error("Error fetching track stats:", trackError);
+         return res.status(500).json({error: "Error fetching track stats"});
+      }
+
+      // Format the data to match the structure expected by front end
+      const formattedTracks = {
+         items: trackData.map(item => ({
+            id: item["track_id"],
+            name: item["Tracks"]["track_name"],
+            artists: [{ name: item["Tracks"]["artist"] }],
+            album: {
+               images: [{ url: item["Tracks"]["album_image"] }]
+            },
+            stats: {
+               listen_count: item["listen_count"],
+               skip_count: item["skip_count"],
+               minutes_listened: item["minutes_listened"]
+            }
+         }))
+      };
+
+      // Return the formatted tracks
+      res.json({
+         tracks: formattedTracks
+      });
+
+   } catch (error) {
+      console.error("Error fetching lifetime stats");
+      res.status(500).json({error: "Internal server error"});
+   }
+
+});
+
 const PORT = 3000;
 app.listen(PORT, () => {
    console.log(`Server running on http://localhost:${PORT}`);

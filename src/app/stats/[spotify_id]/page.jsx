@@ -40,7 +40,7 @@ export default function Stats() {
       checkImportStatus();
 
       // Fetch data with the current time range
-      fetchUserData(timeRange);
+      fetchUserData(timeRange, sortMethod);
 
       // Set loading to false after everthing is loaded
       const timer = setTimeout(() => {
@@ -48,12 +48,13 @@ export default function Stats() {
       }, 200); // Waits 200 ms
    }, []);
 
+   // Will call fetchUserData anytime timeRane or sortMethod changes
    useEffect(() => {
 
       if( token ){
-         fetchUserData(timeRange);
+         fetchUserData(timeRange, sortMethod);
       }
-   }, [timeRange, token]);
+   }, [timeRange, sortMethod, token]);
 
    async function checkImportStatus() {
       try{
@@ -69,69 +70,97 @@ export default function Stats() {
       }
    }
 
-   async function fetchUserData(range) {
+   async function fetchUserData(range, sortMethod) {
       try {
-
-         const cachedData = localStorage.getItem('spotify_data' + range);
-         const cachedTimeStamp = localStorage.getItem('spotify_data_timestamp' + range);
-
-         const isCacheValid = cachedData && cachedTimeStamp && (Date.now() - parseInt(cachedTimeStamp) < 60 * 60 * 1000); // checks if values are null and checks if time is less than 1 hours
-
-         if( isCacheValid ){
-            const parsedData = JSON.parse(cachedData);
-            setProfileData(parsedData["profile"]);
-            setArtistData(parsedData["artists"]);
-            setTrackData(parsedData["tracks"]);
-            console.log("Using cached spotify data");
-            return;
-         }
-
-         // No valid cache so fetch new data
+         
+         // These can be used in either statement
          const userId = localStorage.getItem("user_id");
          const token = localStorage.getItem("access_token");
-
          const requestOptions = {
             headers: {
                'Authorization': `Bearer ${token}`
             }
          };
 
+         // Fetching life time stats
          if( range === "lifetime" && hasImportedHistory ) {
-            console.log("Fetching database...");
-            return;
+            const cachedData = localStorage.getItem(`lifetime_data_${sortMethod}`);
+            const cachedTimeStamp = localStorage.getItem(`lifetime_data_timestamp_${sortMethod}`);
+            
+            const isCacheValid = cachedData && cachedTimeStamp && (Date.now() - parseInt(cachedTimeStamp) < 60 * 60 * 1000); // checks if values are null and checks if time is less than 1 hours
+
+            if( isCacheValid ){
+               const parsedData = JSON.parse(cachedData);
+               console.log(`Using cached lifetime data sorted by ${sortMethod}`);
+               return parsedData;
+            }
+
+            // If cache is invalid fetch from backend
+            console.log(`Fetching lifetime data sorted by ${sortMethod}`);
+
+            try{
+               const response = await fetch(`http://localhost:3000/lifetime-stats/${userId}?sort=${sortMethod}`, requestOptions);
+
+               if( response.ok ){
+                  const lifetimeData = await response.json();
+
+                  //update state
+                  setTrackData(lifetimeData.tracks);
+
+                  localStorage.setItem(`lifetime_data_${sortMethod}`, JSON.stringify(lifetimeData.tracks));
+                  localStorage.setItem(`lifetime_data_timestamp_${sortMethod}`, Date.now().toString());
+
+                  console.log(`Cached lifetime data sorted by ${sortMethod}`);
+               }
+               else{
+                  console.error("Error fetching lifetime data:", response.status);
+               }
+            } catch (err) {
+               console.error("Error fetching lifetime data:", err);
+            }
          }
-
-         // For Spotify API time ranges
-         const profileResponse = await fetch('http://localhost:3000/me', requestOptions);
-         const artistResponse = await fetch(`http://localhost:3000/me/top/artists?time_range=${range}`, requestOptions);
-         const trackResponse = await fetch(`http://localhost:3000/me/top/tracks?time_range=${range}`, requestOptions);
-         
-         const profileData = await profileResponse.json();
-         const artistData = await artistResponse.json();
-         const trackData = await trackResponse.json();
-         
-         setProfileData(profileData);
-         setArtistData(artistData);
-         setTrackData(trackData);
-
-         // Cache the data for later use
-         cacheData(range, profileData, artistData, trackData);
+         else{ // Fetching regular stats from spotify api
+            const cachedData = localStorage.getItem(`spotify_data_${range}`);
+            const cachedTimeStamp = localStorage.getItem(`spotify_data_timestamp_${range}`);
+            
+            const isCacheValid = cachedData && cachedTimeStamp && (Date.now() - parseInt(cachedTimeStamp) < 60 * 60 * 1000); // checks if values are null and checks if time is less than 1 hours
+            
+            if( isCacheValid ){
+               const parsedData = JSON.parse(cachedData);
+               setProfileData(parsedData["profile"]);
+               setArtistData(parsedData["artists"]);
+               setTrackData(parsedData["tracks"]);
+               console.log("Using cached spotify data");
+               return;
+            }
+   
+            // No valid cache so fetch new data
+            const profileResponse = await fetch('http://localhost:3000/me', requestOptions);
+            const artistResponse = await fetch(`http://localhost:3000/me/top/artists?time_range=${range}`, requestOptions);
+            const trackResponse = await fetch(`http://localhost:3000/me/top/tracks?time_range=${range}`, requestOptions);
+            
+            const profileData = await profileResponse.json();
+            const artistData = await artistResponse.json();
+            const trackData = await trackResponse.json();
+            setProfileData(profileData);
+            setArtistData(artistData);
+            setTrackData(trackData);
+   
+            // Cache the data for later use
+            const dataToCache = {
+               profile: profileData,
+               artists: artistData,
+               tracks: trackData
+            };
+            
+            localStorage.setItem(`spotify_data_${range}`, JSON.stringify(dataToCache));
+            localStorage.setItem(`spotify_data_timestamp_${range}`, Date.now().toString());
+            
+            console.log(`Fetched and cached spotify data for ${range}`);
+         }
       } catch (error) {
          console.error('Error fetching user data', error);
       }
-   }
-
-   // Helper function to cache data
-   function cacheData(range, profileData, artistData, trackData){
-      const dataToCache = {
-         profile: profileData,
-         artists: artistData,
-         tracks: trackData,
-      };
-
-      localStorage.setItem(`spotify_data_${range}`, JSON.stringify(dataToCache));
-      localStorage.setItem(`spotify_data_timestamp_${range}`, Date.now().toString());
-      console.log(`Fetched and cached new spotify data for ${range}`);
    }
 
    // Handle time range change
@@ -197,77 +226,82 @@ export default function Stats() {
                   </div>
                </div>
                
-
-               <div className={styles.displayTitle}>
-                  <p className={styles.sectionTitle}>Top Artists</p>
-                  <ShowAllButton
-                     isShowingAll={showAllArtists}
-                     onChange={handleShowAllArtistsChange}
-                  />
-               </div>
-               <div className={styles.cardContainer}>
-               {artistData?.items?.slice(0, showAllArtists ? 50 : 5).map((artist, index) => (
-                  <div key={index} className={styles.cardItem}>
-                     {artist['images'] && artist['images'][2] && (
-                     <Image 
-                        src={artist['images'][1]['url']} 
-                        alt={artist['name']} 
-                        width={160} 
-                        height={160}
-                        className={styles.cardArtistImage}
+               {timeRange !== "lifetime" ? (
+                  <>
+                  <div className={styles.displayTitle}>
+                     <p className={styles.sectionTitle}>Top Artists</p>
+                     <ShowAllButton
+                        isShowingAll={showAllArtists}
+                        onChange={handleShowAllArtistsChange}
                      />
-                     )}
-                     
-                     <p className={styles.cardTitle}>
-                     {index + 1}: {artist['name']}
-                     </p>
-                     
-                     <p className={styles.cardSubtitle}>
-                     Followers: {formatNumberWithCommas(artist.followers.total)}
-                     </p>
                   </div>
-               ))}
-               </div>
-               
-               <div className={styles.displayTitle}>
-                  <p className={styles.sectionTitle}>Top Tracks</p>
-                  <ShowAllButton
-                     isShowingAll={showAllTracks}
-                     onChange={handleShowAllTracksChange}
-                  />
-               </div>
-               <div className={styles.cardContainer}>
-               {trackData?.items?.slice(0, showAllTracks ? 50 : 5).map((track, index) => (
-                  <div key={index} className={styles.cardItem}>
-                     {track['album']['images'] && track['album']['images'][1] && (
-                     <Image 
-                        src={track['album']['images'][1]['url']} 
-                        alt={track['name']} 
-                        width={160} 
-                        height={160}
-                        className={styles.cardAlbumImage}
+                  <div className={styles.cardContainer}>
+                  {artistData?.items?.slice(0, showAllArtists ? 50 : 5).map((artist, index) => (
+                     <div key={index} className={styles.cardItem}>
+                        {artist['images'] && artist['images'][2] && (
+                        <Image 
+                           src={artist['images'][1]['url']} 
+                           alt={artist['name']} 
+                           width={160} 
+                           height={160}
+                           className={styles.cardArtistImage}
+                        />
+                        )}
+                        
+                        <p className={styles.cardTitle}>
+                        {index + 1}: {artist['name']}
+                        </p>
+                        
+                        <p className={styles.cardSubtitle}>
+                        Followers: {formatNumberWithCommas(artist.followers.total)}
+                        </p>
+                     </div>
+                  ))}
+                  </div>
+                  
+                  <div className={styles.displayTitle}>
+                     <p className={styles.sectionTitle}>Top Tracks</p>
+                     <ShowAllButton
+                        isShowingAll={showAllTracks}
+                        onChange={handleShowAllTracksChange}
                      />
-                     )}
-                     
-                     <p className={styles.cardTitle}>
-                        {index + 1}: {truncateText(track['name'], 25)}
-                     </p>
-                     
-                     <p className={styles.cardSubtitle}>
-                        Artist(s): {
-                           truncateText(
-                              track.artists.map(artist => artist.name).join(', '), 
-                              40
-                           )
-                        }
-                     </p>
-
-                     {/* <p className={styles.cardDetail}>
-                     Release Date: {track['album']['release_date']}
-                     </p> */}
                   </div>
-               ))}
-               </div>
+                  <div className={styles.cardContainer}>
+                  {trackData?.items?.slice(0, showAllTracks ? 50 : 5).map((track, index) => (
+                     <div key={index} className={styles.cardItem}>
+                        {track['album']['images'] && track['album']['images'][1] && (
+                        <Image 
+                           src={track['album']['images'][1]['url']} 
+                           alt={track['name']} 
+                           width={160} 
+                           height={160}
+                           className={styles.cardAlbumImage}
+                        />
+                        )}
+                        
+                        <p className={styles.cardTitle}>
+                           {index + 1}: {truncateText(track['name'], 25)}
+                        </p>
+                        
+                        <p className={styles.cardSubtitle}>
+                           Artist(s): {
+                              truncateText(
+                                 track.artists.map(artist => artist.name).join(', '), 
+                                 40
+                              )
+                           }
+                        </p>
+
+                        {/* <p className={styles.cardDetail}>
+                        Release Date: {track['album']['release_date']}
+                        </p> */}
+                     </div>
+                  ))}
+                  </div>
+                  </>
+               ) : (
+                  <span>Testing</span>
+               )}
             </div>
          )}
          </div>
