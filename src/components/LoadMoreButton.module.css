@@ -4,12 +4,12 @@
    position: relative;
    width: 150px;
    z-index: 10;
-   margin-left: auto;
+   margin-top: 16px;
  }
  
  .selector {
    display: flex;
-   justify-content: space-between;
+   justify-content: center;
    align-items: center;
    width: 100%;
    padding: 8px 12px;
@@ -27,9 +27,4 @@
  
  .selector:hover {
    background-color: #222;
- }
- 
- .arrow {
-   font-size: 10px;
-   color: #0eaa45;
  }
