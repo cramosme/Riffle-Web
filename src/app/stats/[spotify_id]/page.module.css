@@ -21,11 +21,22 @@
    z-index: 1;
  }
 
-.sectionTitle, .lifetimeTitle {
+.sectionTitle {
    font-size: 30px;
    padding: 20px 0;
    color: white;
    width: 100%;
+   font-family: 'Lato-Bold', sans-serif;
+   position:relative;
+   text-align: center;
+}
+
+.lifetimeTitle {
+   font-size: 30px;
+   padding: 20px 0;
+   color: white;
+   width: 100%;
+   margin-left: 100px;
    font-family: 'Lato-Bold', sans-serif;
    position:relative;
    text-align: center;
