@@ -1,0 +1,43 @@
+/* Styles for the OrderButton component */
+
+.container {
+   position: relative;
+   min-width: 120px;
+   z-index: 10;
+   margin-left: 8px;
+ }
+ 
+ .selector {
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   width: 100%;
+   padding: 8px 12px;
+   background-color: #1a1a1a;
+   border-top-color: #0c8a3e;
+   border-left-color: #0c8a3e;
+   border-right-color: #0eaa45;
+   border-bottom-color: #0eaa45;
+   border-radius: 8px;
+   color: white;
+   font-family: 'Lato-Bold', sans-serif;
+   font-size: 14px;
+   cursor: pointer;
+ }
+ 
+ .selector:hover:not(:disabled) {
+   background-color: #222;
+ }
+
+ .selector:disabled {
+   opacity: 0.6;
+   cursor: not-allowed;
+   border-color: #444;
+}
+
+.arrow {
+   margin-left: 8px;
+   color: #0eaa45;
+   font-size: 18px;
+   font-weight: bold;
+}

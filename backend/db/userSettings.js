@@ -32,19 +32,4 @@ async function initializeUserSettings(userId){
 
 }
 
-// This function is called if the user changes any of the values
-async function updateUserSettings(userId, settingsData){
-
-   const { data, error } = await supabase
-      .from('Settings')
-      .update(settingsData)
-      .eq('user_id', userId)
-      .single();
-
-   if( error ){
-      return { error };
-   }
-   return { settings: data };
-}
-
-module.exports = { initializeUserSettings, updateUserSettings };
+module.exports = { initializeUserSettings};

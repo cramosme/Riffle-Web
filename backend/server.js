@@ -6,8 +6,8 @@ const cors = require('cors');  // Allows frontend requests
 /* Database access */
 const { upsertUserProfile } = require('./db/userProfile');
 const { upsertTrack } = require('./db/trackInfo');
-const { upsertTrackInteractions,updateTrackInteraction, calculateMinutesListened, recalculateCounts, removeZeroListenedTracks } = require('./db/trackInteractions');
-const { initializeUserSettings, updateUserSettings } = require('./db/userSettings');
+const { upsertTrackInteractions,updateTrackInteraction, calculateMinutesListened, recalculateCounts, removeTracksUnderThreshold } = require('./db/trackInteractions');
+const { initializeUserSettings } = require('./db/userSettings');
 const supabase = require('../lib/supabaseclient');
 
 const app = express();
@@ -44,7 +44,7 @@ async function getTrackData(trackIds, accessToken) {
          // Store duration for each track
          response.data.tracks.forEach(track => {
             if(track) {
-               console.log(`Processing track: ${track.id}, Name: ${track.name}, Artist: ${track.artists?.[0]?.name || 'Unknown'}`);
+               //console.log(`Processing track: ${track.id}, Name: ${track.name}, Artist: ${track.artists?.[0]?.name || 'Unknown'}`);
                
                 // Check if album images exist
                 const hasAlbumImages = track.album && 
@@ -57,8 +57,8 @@ async function getTrackData(trackIds, accessToken) {
                   ? track.album.images[0].url 
                   : defaultImagePath;  // Default image path
 
-               console.log(`Album images array for ${track.id}:`, 
-               hasAlbumImages ? JSON.stringify(track.album.images) : "No images available");
+               //console.log(`Album images array for ${track.id}:`, 
+               // hasAlbumImages ? JSON.stringify(track.album.images) : "No images available");
 
                trackData[track.id] = {
                   duration_ms: track.duration_ms,
@@ -66,7 +66,7 @@ async function getTrackData(trackIds, accessToken) {
                };
                
                // Log what we're actually storing
-               console.log(`Using image for ${track.id}: ${imageUrl}`);
+               //console.log(`Using image for ${track.id}: ${imageUrl}`);
             } else {
                console.log(`Found null track in batch`);
             }
@@ -161,7 +161,7 @@ async function processImportInBackground(userId, files, accessToken) {
 
             // Update progress every entry or if completed
             if( processedEntries % 100 === 0 || processedEntries === totalEntries ){
-               console.log("Process 100 entries...");
+               //console.log("Process 100 entries...");
                sendProgressUpdate(connection, {
                   status: "processing",
                   progress: Math.round((processedEntries/totalEntries) * 20), // 20% for first part
@@ -171,8 +171,8 @@ async function processImportInBackground(userId, files, accessToken) {
                });
             }
          }
-         console.log(`Completed processing file ${currentFileIndex}/${totalFiles}: ${fileData.name}`);
-         console.log(`Processed entries: ${processedEntries}, Skipped entries: ${skippedEntries}`);
+         //console.log(`Completed processing file ${currentFileIndex}/${totalFiles}: ${fileData.name}`);
+         //console.log(`Processed entries: ${processedEntries}, Skipped entries: ${skippedEntries}`);
       }
 
       // Fetch data from spotify api
@@ -232,8 +232,8 @@ async function processImportInBackground(userId, files, accessToken) {
                }
             };
 
-            console.log(`Processing track: ${trackId}, Name: ${trackData.name}, Artist: ${trackData.artists[0].name}`);
-            console.log(`Album images array:`, JSON.stringify(trackData.album.images));
+            //console.log(`Processing track: ${trackId}, Name: ${trackData.name}, Artist: ${trackData.artists[0].name}`);
+            //console.log(`Album images array:`, JSON.stringify(trackData.album.images));
          
             // Upsert track
             const { track, error: trackError } = await upsertTrack(trackData);
@@ -261,7 +261,7 @@ async function processImportInBackground(userId, files, accessToken) {
          
             // Update progress more frequently
             if( interactionCount % 100 === 0 || interactionCount === totalTracks ){
-               console.log("Processed 100 tracks...");
+               //console.log("Processed 100 tracks...");
                sendProgressUpdate(connection, {
                   status: "processing",
                   progress: 35 + Math.round((interactionCount/totalTracks) * 50), // Up to 85
@@ -298,7 +298,7 @@ async function processImportInBackground(userId, files, accessToken) {
 
             // Update progress
             if( calculatedTracks % 100 === 0 || calculatedTracks === totalTrackIds ){
-               console.log("Calculated 100 tracks...");
+               //console.log("Calculated 100 tracks...");
                sendProgressUpdate(connection, {
                   status: "processing",
                   progress: 85 + Math.round((calculatedTracks/totalTrackIds) * 10), // 10% for calculating
@@ -323,7 +323,8 @@ async function processImportInBackground(userId, files, accessToken) {
          });
       }, 2000);
 
-      const { deleted, count, error: cleanupError } = await removeZeroListenedTracks(userId);
+      console.log("Rmeoving interactions with less than threshold minutes")
+      const { deleted, count, error: cleanupError } = await removeTracksUnderThreshold(userId);
       
       if( cleanupError ){
          console.error("Error cleaning up tracks", cleanupError);
@@ -352,7 +353,8 @@ async function processImportInBackground(userId, files, accessToken) {
          phase: "done",
          totalProcessed: processedEntries,
          totalSkipped: skippedEntries,
-         uniqueTracks: uniqueTrackIds.size
+         uniqueTracks: uniqueTrackIds.size,
+         tracksUnderThreshold: count || 0
       });
 
    } catch(error){
@@ -368,7 +370,7 @@ async function processImportInBackground(userId, files, accessToken) {
 function sendProgressUpdate(connection, data) {
    
    if (!connection || !connection.res) {
-      console.log("No active connection for progress update");
+      //console.log("No active connection for progress update");
       return;
    }
    
@@ -415,8 +417,8 @@ app.post('/store-token', async (req, res) => {
          return;
       }
 
-      console.log('User data fetched successfully:', user);
-      console.log('Settings', settings);
+      //console.log('User data fetched successfully:', user);
+      //console.log('Settings', settings);
 
    } catch (err) {
       console.error('Error processing user data:', err.response?.data || err.message);
@@ -551,7 +553,7 @@ app.put('/settings/:userId', async (req, res) => {
    const { skip_threshold, default_time_range, theme } = req.body;
 
    const udpateFields = {};
-   console.log(`The skip threshold received is ${skip_threshold}`);
+   //console.log(`The skip threshold received is ${skip_threshold}`);
    if( skip_threshold !== undefined ) udpateFields.skip_threshold = skip_threshold;
    if( default_time_range !== undefined ) udpateFields.default_time_range = default_time_range;
    if( theme !== undefined ) udpateFields.theme = theme;
@@ -560,7 +562,7 @@ app.put('/settings/:userId', async (req, res) => {
       return res.status(400).json({error: "No update fields provided"});
    }
 
-   console.log(`Update fields: ${udpateFields["skip_threshold"]}`);
+   //console.log(`Update fields: ${udpateFields["skip_threshold"]}`);
 
    try{
       const {data, error} = await supabase
@@ -578,7 +580,7 @@ app.put('/settings/:userId', async (req, res) => {
 
       // If skip threshold was updated, recalculate statistics
       if( skip_threshold !== undefined ){
-         console.log(`Recalculating track statistics with new threshold ${skip_threshold}`);
+         //console.log(`Recalculating track statistics with new threshold ${skip_threshold}`);
          recalculationResult = await recalculateCounts(userId, skip_threshold);
 
          if( recalculationResult.error ){
@@ -660,14 +662,14 @@ app.get('/import-progress/:userId', (req, res) => {
    // Store connection with access token
    activeConnections.set(userId, connection);
 
-   console.log(`Connection established for user ${userId}`);
+   //console.log(`Connection established for user ${userId}`);
 
    // Send initial connection message
    res.write('data: {"status": "connected"}\n\n');
 
    req.on('close', () => {
       activeConnections.delete(userId);
-      console.log(`Connection closed for user ${userId}`);
+      //console.log(`Connection closed for user ${userId}`);
    });
 
 });
@@ -740,27 +742,27 @@ app.get('/track-stats/:userId/:trackId', async (req, res) => {
       }
       
       if( data ){
-         console.log("Getting duration from data");
+         //console.log("Getting duration from data");
          trackDuration_ms = data["track_duration"];
       }
       // If song is not in the database, make api call to get track duration
       else if(token){
-         console.log("getting duration from api call")
+         //console.log("getting duration from api call")
          try {
             const response = await axios.get(`https://api.spotify.com/v1/tracks/${trackId}`, {
                headers: { Authorization: `Bearer ${token}` }
             });
             
             trackDuration_ms = response["data"]["duration_ms"] || 0;
-            console.log(`Fetched track duration from Spotify API: ${trackDuration_ms}ms`);
+            //console.log(`Fetched track duration from Spotify API: ${trackDuration_ms}ms`);
          } catch (error) {
-            console.log("Couldn't get track duration from Spotify API:", error.message);
+            //console.log("Couldn't get track duration from Spotify API:", error.message);
          }
       } 
       
       // If no record exists yet, return default stats
       if (!data) {
-         console.log(`No data but track duration is ${trackDuration_ms}`);
+         //console.log(`No data but track duration is ${trackDuration_ms}`);
          return res.json({ 
             isFirstPlay: true,
             listenCount: 0,
@@ -770,7 +772,7 @@ app.get('/track-stats/:userId/:trackId', async (req, res) => {
             rank: null // Will implement rank later
          });
       }
-      console.log(`Data and track duration is ${trackDuration_ms}`);
+      //console.log(`Data and track duration is ${trackDuration_ms}`);
       // Return the statistics
       return res.json({
          isFirstPlay: data["listen_count"] === 0 && data["skip_count"] === 0,
@@ -843,6 +845,9 @@ app.get('/lifetime-stats/:userId', async (req, res) => {
    const userId = req.params.userId;
    const sortMethod = req.query.sort || "listen_count";
    const offset = parseInt(req.query.offset) || 0;
+   const ascending = req.query.ascending === "true";
+
+   //console.log(`Fetching data with: sortMethod=${sortMethod}, ascending=${ascending}, offset=${offset}`);
 
    try{
 
@@ -881,7 +886,7 @@ app.get('/lifetime-stats/:userId', async (req, res) => {
             )
          `)
          .eq("user_id", userId)
-         .order(sortMethod, {ascending: false})
+         .order(sortMethod, {ascending: ascending})
          .range(offset, offset + 49);
 
       if( trackError ){

@@ -143,3 +143,50 @@
    border-radius: 10px;
    transition: width 0.3s ease;
  }
+
+ .settingsSummary {
+   margin: 16px 0;
+   padding: 12px;
+   background-color: rgba(14, 170, 69, 0.1);
+   border-radius: 8px;
+   text-align: center;
+ }
+ 
+ .thresholdValue {
+   color: #0eaa45;
+   font-weight: bold;
+   font-family: 'Lato-Bold', sans-serif;
+ }
+ 
+ .settingsLink {
+   color: #0eaa45;
+   text-decoration: none;
+ }
+ 
+ .settingsLink:hover {
+   text-decoration: underline;
+ }
+ 
+ .confirmContainer {
+   margin-top: 12px;
+   padding: 8px;
+   background-color: rgba(255, 255, 255, 0.1);
+   border-radius: 4px;
+   display: inline-block;
+ }
+ 
+ .confirmLabel {
+   display: flex;
+   align-items: center;
+   gap: 8px;
+   cursor: pointer;
+   color: white;
+   font-weight: bold;
+ }
+ 
+ .confirmCheckbox {
+   width: 18px;
+   height: 18px;
+   accent-color: #0eaa45;
+   cursor: pointer;
+ }
