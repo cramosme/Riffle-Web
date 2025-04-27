@@ -842,6 +842,7 @@ app.get('/lifetime-stats/:userId', async (req, res) => {
 
    const userId = req.params.userId;
    const sortMethod = req.query.sort || "listen_count";
+   const offset = parseInt(req.query.offset) || 0;
 
    try{
 
@@ -849,6 +850,18 @@ app.get('/lifetime-stats/:userId', async (req, res) => {
       const validSortMethods = ["listen_count", "skip_count", "minutes_listened"];
       if( !validSortMethods.includes(sortMethod) ){
          return res.status(400).json({error: "Invalid sort method"});
+      }
+
+      // Get total count for pagination info
+      // Will help us in knowing when we can show the load more button
+      const { count, error: countError } = await supabase
+         .from("Track Interactions")
+         .select('*', { count: 'exact', head: true })
+         .eq("user_id", userId);
+
+      if (countError) {
+         console.error("Error getting track count:", countError);
+         return res.status(500).json({ error: "Error fetching track count" });
       }
 
       // Get top tracks with stats
@@ -869,7 +882,7 @@ app.get('/lifetime-stats/:userId', async (req, res) => {
          `)
          .eq("user_id", userId)
          .order(sortMethod, {ascending: false})
-         .limit(50);
+         .range(offset, offset + 49);
 
       if( trackError ){
          console.error("Error fetching track stats:", trackError);
@@ -895,14 +908,19 @@ app.get('/lifetime-stats/:userId', async (req, res) => {
 
       // Return the formatted tracks
       res.json({
-         tracks: formattedTracks
+         tracks: formattedTracks,
+         pagination: {
+            total: count,
+            offset: offset,
+            limit: 50,
+            hasMore: offset + 50 < count
+         }
       });
 
    } catch (error) {
       console.error("Error fetching lifetime stats");
       res.status(500).json({error: "Internal server error"});
    }
-
 });
 
 const PORT = 3000;

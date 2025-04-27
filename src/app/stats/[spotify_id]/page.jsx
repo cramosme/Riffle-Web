@@ -20,6 +20,9 @@ export default function Stats() {
    const [showAllArtists, setShowAllArtists] = useState(false);
    const [showAllTracks, setShowAllTracks] = useState(false);
    const [isLoading, setIsLoading] = useState(true);
+   const [trackOffset, setTrackOffset] = useState(0);
+   const [isLoadingMore, setIsLoadingMore] = useState(false);
+   const [hasMoreTracks, setHasMoreTracks] = useState(true);
 
    // Helper function to add commas to follower count
    const formatNumberWithCommas = (number) => {
@@ -53,6 +56,9 @@ export default function Stats() {
    useEffect(() => {
 
       if( token ){
+         setTrackData(null);
+         setTrackOffset(0);
+         setHasMoreTracks(true);
          fetchUserData(timeRange, sortMethod);
       }
    }, [timeRange, sortMethod, token]);
@@ -85,6 +91,12 @@ export default function Stats() {
 
          // Fetching life time stats
          if( range === "lifetime" && hasImportedHistory ) {
+
+            // Reset offset when changing sort method
+            if( trackOffset !== 0 ){
+               setTrackOffset(0);
+            }
+
             const cachedData = localStorage.getItem(`lifetime_data_${sortMethod}`);
             const cachedTimeStamp = localStorage.getItem(`lifetime_data_timestamp_${sortMethod}`);
             
@@ -101,13 +113,16 @@ export default function Stats() {
             console.log(`Fetching lifetime data sorted by ${sortMethod}`);
 
             try{
-               const response = await fetch(`http://localhost:3000/lifetime-stats/${userId}?sort=${sortMethod}`, requestOptions);
+               const response = await fetch(`http://localhost:3000/lifetime-stats/${userId}?sort=${sortMethod}&offset=0`, requestOptions);
 
                if( response.ok ){
                   const lifetimeData = await response.json();
 
                   //update state
                   setTrackData(lifetimeData.tracks);
+
+                  // Update hasMoreTracks based on pagination result
+                  setHasMoreTracks(lifetimeData.pagination.hasMore);
 
                   localStorage.setItem(`lifetime_data_${sortMethod}`, JSON.stringify(lifetimeData.tracks));
                   localStorage.setItem(`lifetime_data_timestamp_${sortMethod}`, Date.now().toString());
@@ -165,6 +180,67 @@ export default function Stats() {
       }
    }
 
+   // Function to load more tracks
+   async function loadMoreTracks() {
+      if( isLoading || !hasMoreTracks ) return;
+
+      setIsLoadingMore(true);
+
+      try{
+
+         const userId = localStorage.getItem("user_id");
+         const token = localStorage.getItem("access_token");
+         const nextOffset = trackOffset + 50;
+         
+         // Fetch the next batch of tracks
+         const response = await fetch( `http://localhost:3000/lifetime-stats/${userId}?sort=${sortMethod}&offset=${nextOffset}`, {
+            headers: {
+               'Authorization': `Bearer ${token}`
+            }
+         });
+         
+         if (response.ok) {
+            const moreTracksData = await response.json();
+            
+            // If we got fewer than 50 tracks, there are no more to load
+            if (moreTracksData.tracks.items.length < 50) {
+               setHasMoreTracks(false);
+            }
+            
+            // If we got no tracks, there are no more to load
+            if (moreTracksData.tracks.items.length === 0) {
+               setHasMoreTracks(false);
+               setIsLoadingMore(false);
+               return;
+            }
+            
+            // Combine the new tracks with existing ones
+            const combinedTracks = {
+               ...trackData,
+               items: [...trackData.items, ...moreTracksData.tracks.items]
+            };
+            
+            // Update state
+            setTrackData(combinedTracks);
+            setTrackOffset(nextOffset);
+            
+            // Update the cache
+            localStorage.setItem(`lifetime_data_${sortMethod}`, JSON.stringify(combinedTracks));
+            localStorage.setItem(`lifetime_data_timestamp_${sortMethod}`, Date.now().toString());
+            
+            console.log(`Loaded ${moreTracksData.tracks.items.length} more tracks, new total: ${combinedTracks.items.length}`);
+         } else {
+            console.error("Error fetching more tracks:", response.status);
+            setHasMoreTracks(false);
+         }
+      } catch (error) {
+         console.error("Error loading more tracks:", error);
+         setHasMoreTracks(false);
+      } finally {
+         setIsLoadingMore(false);
+      }
+   }
+
    // Handle time range change
    const handleTimeRangeChange = (newRange) => {
       setTimeRange(newRange);
@@ -173,6 +249,9 @@ export default function Stats() {
    // Handle sorting change
    const handleSortingChange = (newSort) => {
       setSortMethod(newSort);
+      setTrackData(null);
+      setTrackOffset(0);
+      setHasMoreTracks(true);
    }
 
    const handleShowAllArtistsChange = (showAllArtists) => {
@@ -183,8 +262,8 @@ export default function Stats() {
       setShowAllTracks(showAllTracks);
    }
 
-   const handleLoadMoreTracks = (loadMoreTracks) => {
-      return;
+   const handleLoadMoreTracks = () => {
+      loadMoreTracks();
    }
 
    // Handle user selecting top track to fill in web playback
@@ -309,8 +388,8 @@ export default function Stats() {
                         />
                      </div>
                      <div className={styles.cardContainer}>
-                        {trackData?.items?.slice(0, 50).map((track, index) => (
-                           <div key={track["id"]} className={styles.cardItem}>
+                        {trackData?.items?.map((track, index) => (
+                           <div key={`${track["id"]}-${sortMethod}-${index}`} className={styles.cardItem}>
                               {/* Track Image */}
                               {track['album']['images'] && track['album']['images'][0] && (
                                  <Image 
@@ -347,9 +426,13 @@ export default function Stats() {
                            </div>
                         ))}
                      </div>
-                     <LoadMoreButton
-                        onChange={handleLoadMoreTracks}
-                     />
+                     {hasMoreTracks && (
+                        <LoadMoreButton
+                           isLoading={isLoadingMore}
+                           hasMore={hasMoreTracks}
+                           onClick={handleLoadMoreTracks}
+                        />
+                     )}
                   </>
                )}
             </div>

@@ -4,7 +4,7 @@
    position: relative;
    width: 150px;
    z-index: 10;
-   margin-top: 16px;
+   margin-top: 24px;
  }
  
  .selector {
@@ -25,6 +25,12 @@
    cursor: pointer;
  }
  
- .selector:hover {
+ .selector:hover:not(:disabled) {
    background-color: #222;
  }
+
+ .selector:disabled {
+   opacity: 0.6;
+   cursor: not-allowed;
+   border-color: #444;
+}

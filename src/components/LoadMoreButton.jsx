@@ -2,20 +2,16 @@
 
 import styles from './LoadMoreButton.module.css';
 
-export default function LoadMoreButton({onChange}) {
-
-   const handleToggle = () => {
-      onChange(console.log("Button pressed"));
-   }
-
+export default function LoadMoreButton({ isLoading, hasMore, onClick }) {
    return (
       <div className={styles.container}>
         <button 
           className={styles.selector} 
-          onClick={handleToggle}
-          aria-label={"Load More Tracks"}
+          onClick={onClick}
+          disabled={isLoading || !hasMore}
+          aria-label={isLoading ? "Loading..." : "Load More Tracks"}
         >
-         <span>{"Load More Tracks"}</span>
+         <span>{isLoading ? "Loading..." : "Load More Tracks"}</span>
         </button>
       </div>
    );
