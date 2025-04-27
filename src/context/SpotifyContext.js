@@ -424,7 +424,6 @@ export function SpotifyProvider({ children }) {
             if (state) {
                // This updates lastPosition.current inside getCurrentState
                setPosition(lastPosition.current);
-               console.log(`Current position: ${lastPosition.current}ms`);
             }
          }
       }, 500); // Poll every 100 ms
