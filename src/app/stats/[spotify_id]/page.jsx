@@ -7,6 +7,7 @@ import WebPlayback from '@/components/WebPlayback';
 import TimeRangeDropdown from '@/components/TimeRangeDropdown';
 import SortingDropdown from '@/components/SortingDropdown';
 import ShowAllButton from '@/components/ShowAllButton';
+import LoadMoreButton from '@/components/LoadMoreButton';
 
 export default function Stats() {
    const [profileData, setProfileData] = useState(null);
@@ -92,7 +93,8 @@ export default function Stats() {
             if( isCacheValid ){
                const parsedData = JSON.parse(cachedData);
                console.log(`Using cached lifetime data sorted by ${sortMethod}`);
-               return parsedData;
+               setTrackData(parsedData);
+               return;
             }
 
             // If cache is invalid fetch from backend
@@ -181,6 +183,10 @@ export default function Stats() {
       setShowAllTracks(showAllTracks);
    }
 
+   const handleLoadMoreTracks = (loadMoreTracks) => {
+      return;
+   }
+
    // Handle user selecting top track to fill in web playback
    // const handlePlayTrack = (track) => {
 
@@ -208,12 +214,6 @@ export default function Stats() {
          {artistData && trackData && (
             <div className={styles.contentWrapper}>
                <div className={styles.dropdownContainer}>
-                  {timeRange === "lifetime" && (
-                     <SortingDropdown
-                        selectedMethod={sortMethod}
-                        onChange={handleSortingChange}
-                     />
-                  )}
                   <TimeRangeDropdown
                      selectedRange={timeRange}
                      onChange={handleTimeRangeChange}
@@ -249,7 +249,7 @@ export default function Stats() {
                         )}
                         
                         <p className={styles.cardTitle}>
-                        {index + 1}: {artist['name']}
+                        {index + 1}. {artist['name']}
                         </p>
                         
                         <p className={styles.cardSubtitle}>
@@ -267,40 +267,90 @@ export default function Stats() {
                      />
                   </div>
                   <div className={styles.cardContainer}>
-                  {trackData?.items?.slice(0, showAllTracks ? 50 : 5).map((track, index) => (
-                     <div key={index} className={styles.cardItem}>
-                        {track['album']['images'] && track['album']['images'][1] && (
-                        <Image 
-                           src={track['album']['images'][1]['url']} 
-                           alt={track['name']} 
-                           width={160} 
-                           height={160}
-                           className={styles.cardAlbumImage}
-                        />
-                        )}
-                        
-                        <p className={styles.cardTitle}>
-                           {index + 1}: {truncateText(track['name'], 25)}
-                        </p>
-                        
-                        <p className={styles.cardSubtitle}>
-                           Artist(s): {
-                              truncateText(
-                                 track.artists.map(artist => artist.name).join(', '), 
-                                 40
-                              )
-                           }
-                        </p>
+                     {trackData?.items?.slice(0, showAllTracks ? 50 : 5).map((track, index) => (
+                        <div key={index} className={styles.cardItem}>
+                           {track['album']['images'] && track['album']['images'][1] && (
+                           <Image 
+                              src={track['album']['images'][1]['url']} 
+                              alt={track['name']} 
+                              width={160} 
+                              height={160}
+                              className={styles.cardAlbumImage}
+                           />
+                           )}
+                           
+                           <p className={styles.cardTitle}>
+                              {index + 1}. {truncateText(track['name'], 25)}
+                           </p>
+                           
+                           <p className={styles.cardSubtitle}>
+                              Artist(s): {
+                                 truncateText(
+                                    track.artists.map(artist => artist.name).join(', '), 
+                                    40
+                                 )
+                              }
+                           </p>
 
-                        {/* <p className={styles.cardDetail}>
-                        Release Date: {track['album']['release_date']}
-                        </p> */}
-                     </div>
-                  ))}
+                           {/* <p className={styles.cardDetail}>
+                           Release Date: {track['album']['release_date']}
+                           </p> */}
+                        </div>
+                     ))}
                   </div>
                   </>
                ) : (
-                  <span>Testing</span>
+                  <>
+                     <div className={styles.displayTitle}>
+                        <p className={styles.lifetimeTitle}>Lifetime Top Tracks</p>
+                        <SortingDropdown
+                           selectedMethod={sortMethod}
+                           onChange={handleSortingChange}
+                        />
+                     </div>
+                     <div className={styles.cardContainer}>
+                        {trackData?.items?.slice(0, 50).map((track, index) => (
+                           <div key={track["id"]} className={styles.cardItem}>
+                              {/* Track Image */}
+                              {track['album']['images'] && track['album']['images'][0] && (
+                                 <Image 
+                                    src={track['album']['images'][0]['url']} 
+                                    alt={track['name']} 
+                                    width={160} 
+                                    height={160}
+                                    className={styles.cardAlbumImage}
+                                 />
+                              )}
+                                 
+                              <p className={styles.cardTitle}>
+                                 {index + 1}. { track['name'] }
+                              </p>
+                                 
+                              <p className={styles.cardSubtitle}>
+                                 Artist(s): {track.artists.map(artist => artist.name).join(', ')}
+                              </p>
+
+                              {/* Track Stats */}
+                              {track["stats"] && (
+                                 <div className={styles.statsContainer}>
+                                    <div className={styles.statItem}>
+                                       <span>Plays {track["stats"]["listen_count"]}</span>
+                                    </div>
+                                    <div className={styles.statItem}>
+                                       <span>Minutes {track["stats"]["minutes_listened"].toFixed(2)}</span>
+                                    </div>
+                                    <div className={styles.statItem}>
+                                       <span>Skips {track["stats"]["skip_count"]}</span>
+                                    </div>
+                                 </div>
+                              )}
+                           </div>
+                        ))}
+                     </div>
+                     <LoadMoreButton
+                        onChange={handleLoadMoreTracks}
+                     />
+                  </>
                )}
             </div>
          )}
