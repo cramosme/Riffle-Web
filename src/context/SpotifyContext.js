@@ -216,6 +216,25 @@ export function SpotifyProvider({ children }) {
          
          console.log(`Recording interaction for track ${trackId}: ${playDuration}ms played out of ${trackDuration}ms`);
 
+         // Get track details to pass track name and artist name
+         let trackName = "Unknown Track";
+         let artistName = "Unknown Artist";
+
+         try{
+            if( player ){
+               const state = await player.getCurrentState();
+               if( state && state.track_window && state.track_window.current_track ){
+                  trackName = state.track_window.current_track.name;
+
+                  if (state.track_window.current_track.artists && state.track_window.current_track.artists.length > 0) {
+                     artistName = state.track_window.current_track.artists[0].name;
+                 }
+               }
+            }
+         } catch (e) {
+            console.log("Error getting track details from player:", e);
+         }
+
          const response = await fetch(`http://localhost:3000/track-interaction/${userId}/${trackId}`, {
             method: 'POST',
             headers: {
@@ -224,7 +243,9 @@ export function SpotifyProvider({ children }) {
             },
             body: JSON.stringify({
                playDuration,
-               trackDuration
+               trackDuration,
+               trackName,
+               artistName
             })
          });
          
