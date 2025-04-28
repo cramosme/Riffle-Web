@@ -145,9 +145,6 @@ async function updateTrackInteraction(userId, trackId, trackName, artistName, pl
       return { error };
    }
 
-   // Update artist interactions
-   await updateArtistInteraction(userId, artistName, action === 'listened' ? 1 : 0, action === 'skipped' ? 1 : 0, minutesListened);
-
    return { data };
 }
 

@@ -1,7 +1,7 @@
 const supabase = require('../../lib/supabaseclient');
+const axios = require('axios');
 
-
-async function upsertArtistInteraction({ userId, artistName, listenCount = 0, skipCount = 0, minutesListened = 0}) {
+async function upsertArtistInteraction({ userId, artistName, listenCount, skipCount, minutesListened, artistImage}) {
    try {
       // Check if record exists
       const { data: existingRecord, error: fetchError } = await supabase
@@ -41,7 +41,8 @@ async function upsertArtistInteraction({ userId, artistName, listenCount = 0, sk
          artist_name: artistName,
          listen_count: listenCount,
          skip_count: skipCount,
-         minutes_listened: minutesListened
+         minutes_listened: minutesListened,
+         artist_image: artistImage
       };
 
       const { data, error } = await supabase
@@ -61,8 +62,14 @@ async function upsertArtistInteraction({ userId, artistName, listenCount = 0, sk
 }
 
 // Helper function to update artist interactions when a track is played/skipped through web playback
-async function updateArtistInteraction(userId, artistName, listenCount, skipCount, minutesListened){
+async function updateArtistInteraction(userId, artistName, listenCount, skipCount, minutesListened, accessToken){
    try {
+      // Try to get artist image if accessToken is provided
+      let artistImage = null;
+      if (accessToken) {
+         artistImage = await getArtistImage(artistName, accessToken);
+      }
+
       // Check if artist record exists
       const { data: existingArtist, error: fetchError } = await supabase
          .from('Artist Interactions')
@@ -80,19 +87,28 @@ async function updateArtistInteraction(userId, artistName, listenCount, skipCoun
       }
 
       if (existingArtist) {
+
+         // Update existing artist record
+         const updateData = {
+            listen_count: existingArtist["listen_count"] + listenCount,
+            skip_count: existingArtist["skip_count"] + skipCount,
+            minutes_listened: existingArtist["minutes_listened"] + minutesListened
+         };
+
+         // Only update image if one is fetched and current is default or null
+         if (artistImage && (!existingArtist.artist_image || existingArtist.artist_image === "http://localhost:8081/images/no_image_provided.png")) {
+            updateData.artist_image = artistImage;
+         }
+
          // Update existing artist record
          const { data, error } = await supabase
             .from('Artist Interactions')
-            .update({
-               listen_count: existingArtist["listen_count"] + listenCount,
-               skip_count: existingArtist["skip_count"] + skipCount,
-               minutes_listened: existingArtist["minutes_listened"] + minutesListened
-            })
+            .update(updateData)
             .match({
                user_id: userId, 
                artist_name: artistName
             });
-
+         
          if (error) {
             console.error('Error updating artist interaction:', error);
             return { error };
@@ -107,7 +123,8 @@ async function updateArtistInteraction(userId, artistName, listenCount, skipCoun
                artist_name: artistName,
                listen_count: listenCount,
                skip_count: skipCount,
-               minutes_listened: minutesListened
+               minutes_listened: minutesListened,
+               artist_image: artistImage
             })
             .select();
 
@@ -194,7 +211,8 @@ async function sumArtistStats(userId, artistName){
                artist_name: artistName,
                listen_count: totalListens,
                skip_count: totalSkips,
-               minutes_listened: totalMinutes
+               minutes_listened: totalMinutes,
+               artist_image: "http://localhost:8081/images/no_image_provided.png"
             })
             .select();
 
@@ -210,4 +228,41 @@ async function sumArtistStats(userId, artistName){
    }
 }
 
-module.exports = { upsertArtistInteraction, updateArtistInteraction, sumArtistStats };
+async function getArtistImage(artistName, accessToken) {
+   try {
+      if (!accessToken) {
+         console.log(`No access token available for fetching artist image: ${artistName}`);
+         return null;
+      }
+      
+      // Search for the artist using Spotify API
+      const response = await axios.get('https://api.spotify.com/v1/search', {
+         params: {
+            q: artistName,
+            type: 'artist',
+            limit: 1
+         },
+         headers: {
+            'Authorization': `Bearer ${accessToken}`
+         }
+      });
+      
+      // Check if we found an artist
+      if (response.data.artists && 
+            response.data.artists.items && 
+            response.data.artists.items.length > 0 &&
+            response.data.artists.items[0].images &&
+            response.data.artists.items[0].images.length > 0) {
+         return response.data.artists.items[0].images[0].url;
+      }
+      
+      // Default image if not found
+      return "http://localhost:8081/images/no_image_provided.png";
+      
+   } catch (error) {
+      console.error(`Error fetching artist image for ${artistName}:`, error.message);
+      return "http://localhost:8081/images/no_image_provided.png";
+   }
+}
+
+module.exports = { upsertArtistInteraction, updateArtistInteraction, sumArtistStats, getArtistImage };

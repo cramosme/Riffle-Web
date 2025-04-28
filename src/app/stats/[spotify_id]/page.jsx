@@ -171,6 +171,8 @@ export default function Stats() {
                   if (artistResponse.ok) {
                      const lifetimeArtistData = await artistResponse.json();
                      
+                     console.log("Artist data from API:", lifetimeArtistData.artists);
+
                      setArtistData(lifetimeArtistData.artists);
                      setHasMoreArtists(lifetimeArtistData.pagination.hasMore);
                      
@@ -518,7 +520,7 @@ export default function Stats() {
                      </div>
                      {artistData && (
                         <div className={styles.cardContainer}>
-                           {artistData.items.map((artist, index) => (
+                           {artistData?.items?.map((artist, index) => (
                               <div key={`${artist.name}-${sortMethod}-${index}`} className={styles.cardItem}>
                                  {/* Artist Image */}
                                  <Image 
@@ -536,13 +538,13 @@ export default function Stats() {
                                  {/* Artist Stats */}
                                  <div className={styles.statsContainer}>
                                     <div className={styles.statItem}>
-                                       <span>Plays: {artist.stats.listen_count}</span>
+                                       <span>Plays: {artist?.stats?.listen_count}</span>
                                     </div>
                                     <div className={styles.statItem}>
-                                       <span>Minutes: {artist.stats.minutes_listened.toFixed(2)}</span>
+                                       <span>Minutes: {artist?.stats?.minutes_listened.toFixed(2)}</span>
                                     </div>
                                     <div className={styles.statItem}>
-                                       <span>Skips: {artist.stats.skip_count}</span>
+                                       <span>Skips: {artist?.stats?.skip_count}</span>
                                     </div>
                                  </div>
                               </div>
