@@ -1,13 +1,18 @@
 const supabase = require('../../lib/supabaseclient');
+const { updateArtistInteraction, sumArtistStats } = require('./artistInteractions');
 
 // This function is used to instantiate track interactions for each user, is called as we read through the json passed in import page
-async function upsertTrackInteractions(userId, trackId, playDuration, trackDuration){
+async function upsertTrackInteractions(userId, trackId, trackName, artistName, playDuration, trackDuration){
 
    // First need to see if the record already exists. If it does we can just append the playDuration to the plays array
    const { data: existingRecord, error: fetchError } = await supabase
       .from('Track Interactions')
       .select('*')
-      .match({user_id: userId, track_id: trackId})
+      .match({
+         user_id: userId, 
+         track_name: trackName,
+         artist_name: artistName
+      })
       .single();
 
    // If there's an error and its not a "not found" error
@@ -31,7 +36,11 @@ async function upsertTrackInteractions(userId, trackId, playDuration, trackDurat
       const { data, error } = await supabase
          .from('Track Interactions')
          .update(updateRecord)
-         .match({user_id: userId, track_id: trackId});
+         .match({
+            user_id: userId,
+            track_name: trackName,
+            artist_name: artistName
+         });
 
       if( error ){
          return { error };
@@ -50,6 +59,8 @@ async function upsertTrackInteractions(userId, trackId, playDuration, trackDurat
    const record = {
       user_id: userId,
       track_id: trackId,
+      track_name: trackName,
+      artist_name: artistName,
       track_duration: trackDuration,
       play_data: playData
    };
@@ -69,7 +80,7 @@ async function upsertTrackInteractions(userId, trackId, playDuration, trackDurat
 }
 
 // Function for updating track interaction (listened or skipped), based on web playback
-async function updateTrackInteraction(userId, trackId, playDuration, skipThreshold, trackDuration){
+async function updateTrackInteraction(userId, trackId, trackName, artistName, playDuration, skipThreshold, trackDuration){
 
    const lengthListened = (playDuration/trackDuration) * 100; // Calculates the total length of the song listened
 
@@ -81,7 +92,11 @@ async function updateTrackInteraction(userId, trackId, playDuration, skipThresho
    const { data: existingRecord, error: fetchError } = await supabase
       .from('Track Interactions')
       .select('*')
-      .match({user_id: userId, track_id: trackId})
+      .match({
+         user_id: userId, 
+         track_name: trackName,
+         artist_name: artistName
+      })
       .single();
    
    // If there was an error and its not because the record doesnt exist
@@ -91,13 +106,13 @@ async function updateTrackInteraction(userId, trackId, playDuration, skipThresho
 
    // If the record doesnt exist, create one
    if( fetchError && fetchError.code === 'PGRST116' ){
-      const { trackData, error } = await upsertTrackInteractions(userId, trackId, playDuration, trackDuration);
+      const { trackData, error } = await upsertTrackInteractions(userId, trackId, trackName, artistName, playDuration, trackDuration);
       if( error ){
          return { error };
       }
 
       // Update now that record exists
-      return updateTrackInteraction(userId, trackId, playDuration, skipThreshold, trackDuration);
+      return updateTrackInteraction(userId, trackId, trackName, artistName, playDuration, skipThreshold, trackDuration);
    }
 
    // Record does exist, so update it
@@ -120,24 +135,35 @@ async function updateTrackInteraction(userId, trackId, playDuration, skipThresho
    const { data, error } = await supabase
       .from('Track Interactions')
       .update(updateRecord)
-      .match({user_id: userId, track_id: trackId});
+      .match({
+         user_id: userId, 
+         track_name: trackName,
+         artist_name: artistName
+      });
 
    if( error ){
       return { error };
    }
 
+   // Update artist interactions
+   await updateArtistInteraction(userId, artistName, action === 'listened' ? 1 : 0, action === 'skipped' ? 1 : 0, minutesListened);
+
    return { data };
 }
 
 // This function only gets called when doing the import processing. 
-async function calculateMinutesListened(userId, trackId){
+async function calculateMinutesListened(userId, trackName, artistName){
 
    // Fetch the record and settings
    const [recordResponse, settingsResponse] = await Promise.all([
       supabase
          .from('Track Interactions')
          .select('*')
-         .match({user_id: userId, track_id: trackId})
+         .match({
+            user_id: userId, 
+            track_name: trackName,
+            artist_name: artistName
+         })
          .single(),
       
       supabase
@@ -195,7 +221,11 @@ async function calculateMinutesListened(userId, trackId){
          listen_count: listenCount,
          skip_count: skipCount
       })
-      .match({user_id: userId, track_id: trackId});
+      .match({
+         user_id: userId, 
+         track_name: trackName,
+         artist_name: artistName
+      });
 
    if( updateError ){
       return { error: updateError };
@@ -232,6 +262,7 @@ async function recalculateCounts(userId, newThreshold) {
    let skippedDueToNoChange = 0;
    let skippedDueToZeroDuration = 0;
    let errorCount = 0;
+   let affectedArtists = new Set();
 
    for( const interaction of interactions ){
 
@@ -282,7 +313,14 @@ async function recalculateCounts(userId, newThreshold) {
       }
       else{
          updatedCount++;
+         affectedArtists.add(interactions["artist_name"]);
       }
+   }
+
+   // Recalculate artist stats for affected artists
+   console.log(`Recalculating stats for ${affectedArtists.size} affected artists`);
+   for (const artistName of affectedArtists) {
+      await sumArtistStats(userId, artistName);
    }
 
    console.log(`Recalculation complete:
@@ -291,12 +329,14 @@ async function recalculateCounts(userId, newThreshold) {
       - Skipped (no data): ${skippedDueToNoData}
       - Skipped (no change needed): ${skippedDueToNoChange}
       - Skipped (zero duration): ${skippedDueToZeroDuration}
-      - Errors: ${errorCount}`);
+      - Errors: ${errorCount}
+      - Affected Artists: ${affectedArtists.size}`);
 
    return{
       success: true,
       message: `Updated ${updatedCount} of ${interactions.length} interactions`,
-      updatedCount
+      updatedCount,
+      affectedArtistsCount: affectedArtists.size
    };
 }
 
@@ -319,6 +359,24 @@ async function removeTracksUnderThreshold(userId) {
       // Get the threshold value
       const minMinutesThreshold = settings["min_minutes_threshold"];
       console.log(`Using minimum minutes threshold: ${minMinutesThreshold}`);
+
+      // Get a list of all tracks that will be removed
+      const { data: tracksToRemove, error: tracksError } = await supabase
+         .from('Track Interactions')
+         .select('track_name, artist_name')
+         .eq('user_id', userId)
+         .lt('minutes_listened', minMinutesThreshold);
+
+      if (tracksError) {
+         console.error("Error listing tracks to remove:", tracksError);
+         return { error: tracksError };
+      }
+
+      // Create a set of affected artists
+      const affectedArtists = new Set();
+      tracksToRemove.forEach(track => {
+         affectedArtists.add(track.artist_name);
+      });
 
       // Count how many records will be removed
       const { count, error: countError } = await supabase
@@ -346,6 +404,12 @@ async function removeTracksUnderThreshold(userId) {
       if( error ){
          console.error("Error deleting tracks");
          return { error };
+      }
+
+      // Calculate artist stats for affected artists
+      console.log(`Recalculating stats for ${affectedArtists.size} affected artists`);
+      for (const artistName of affectedArtists) {
+         await sumArtistStats(userId, artistName);
       }
  
       return { deleted: data || [], count: count || 0 };

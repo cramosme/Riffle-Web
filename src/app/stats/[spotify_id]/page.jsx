@@ -22,6 +22,7 @@ export default function Stats() {
    const [showAllTracks, setShowAllTracks] = useState(false);
    const [isLoading, setIsLoading] = useState(true);
    const [trackOffset, setTrackOffset] = useState(0);
+   const [artistOffset, setArtistOffset] = useState(0);
    const [isLoadingMore, setIsLoadingMore] = useState(false);
    const [isLoadingMoreArtists, setIsLoadingMoreArtists] = useState(false);
    const [hasMoreArtists, setHasMoreArtists] = useState(true);
@@ -61,8 +62,11 @@ export default function Stats() {
 
       if( token ){
          setTrackData(null);
+         setArtistData(null);
          setTrackOffset(0);
+         setArtistOffset(0);
          setHasMoreTracks(true);
+         setHasMoreArtists(true);
          fetchUserData(timeRange, sortMethod);
       }
    }, [timeRange, sortMethod, ascending, token]);
@@ -101,45 +105,85 @@ export default function Stats() {
                setTrackOffset(0);
             }
 
+            if( artistOffset !== 0 ){
+               setArtistOffset(0);
+            }
+
             const cachedData = localStorage.getItem(`lifetime_data_${sortMethod}_${ascending}`);
             const cachedTimeStamp = localStorage.getItem(`lifetime_data_timestamp_${sortMethod}_${ascending}`);
             
             const isCacheValid = cachedData && cachedTimeStamp && (Date.now() - parseInt(cachedTimeStamp) < 60 * 60 * 1000); // checks if values are null and checks if time is less than 1 hours
-
+            
             if( isCacheValid ){
                const parsedData = JSON.parse(cachedData);
                console.log(`Using cached lifetime data sorted by ${sortMethod} in ${ascending ? 'ascending' : 'descending'} order`);
                setTrackData(parsedData);
                return;
             }
-
-            // If cache is invalid fetch from backend
-            console.log(`Fetching lifetime data sorted by ${sortMethod} in ${ascending ? 'ascending' : 'descending'} order`);
-
-            try{
-               const ascendingParam = ascending.toString();
-
-               const response = await fetch(`http://localhost:3000/lifetime-stats/${userId}?sort=${sortMethod}&offset=0&ascending=${ascendingParam}`, requestOptions);
-
-               if( response.ok ){
-                  const lifetimeData = await response.json();
-
-                  //update state
-                  setTrackData(lifetimeData.tracks);
-
-                  // Update hasMoreTracks based on pagination result
-                  setHasMoreTracks(lifetimeData.pagination.hasMore);
-
-                  localStorage.setItem(`lifetime_data_${sortMethod}_${ascending}`, JSON.stringify(lifetimeData.tracks));
-                  localStorage.setItem(`lifetime_data_timestamp_${sortMethod}_${ascending}`, Date.now().toString());
-
-                  console.log(`Cached lifetime data sorted by ${sortMethod} in ${ascending ? 'ascending' : 'descending'} order`);
+            else{
+               // If cache is invalid fetch from backend
+               console.log(`Fetching lifetime data sorted by ${sortMethod} in ${ascending ? 'ascending' : 'descending'} order`);
+               
+               try{
+                  const ascendingParam = ascending.toString();
+                  
+                  const response = await fetch(`http://localhost:3000/lifetime-stats/${userId}?sort=${sortMethod}&offset=0&ascending=${ascendingParam}`, requestOptions);
+                  
+                  if( response.ok ){
+                     const lifetimeData = await response.json();
+                     
+                     //update state
+                     setTrackData(lifetimeData.tracks);
+                     
+                     // Update hasMoreTracks based on pagination result
+                     setHasMoreTracks(lifetimeData.pagination.hasMore);
+                     
+                     localStorage.setItem(`lifetime_data_${sortMethod}_${ascending}`, JSON.stringify(lifetimeData.tracks));
+                     localStorage.setItem(`lifetime_data_timestamp_${sortMethod}_${ascending}`, Date.now().toString());
+                     
+                     console.log(`Cached lifetime data sorted by ${sortMethod} in ${ascending ? 'ascending' : 'descending'} order`);
+                  }
+                  else{
+                     console.error("Error fetching lifetime data:", response.status);
+                  }
+               } catch (err) {
+                  console.error("Error fetching lifetime data:", err);
                }
-               else{
-                  console.error("Error fetching lifetime data:", response.status);
+            }
+            
+            // Also fetch artist data
+            const cachedArtistData = localStorage.getItem(`lifetime_artists_${sortMethod}_${ascending}`);
+            const cachedArtistTimeStamp = localStorage.getItem(`lifetime_artists_timestamp_${sortMethod}_${ascending}`);
+            
+            const isArtistCacheValid = cachedArtistData && cachedArtistTimeStamp && (Date.now() - parseInt(cachedArtistTimeStamp) < 60 * 60 * 1000);
+         
+            if( isArtistCacheValid ){
+               const parsedArtistData = JSON.parse(cachedArtistData);
+               console.log(`Using cached lifetime artist data sorted by ${sortMethod} in ${ascending ? 'ascending' : 'descending'} order`);
+               setArtistData(parsedArtistData);
+            }
+            else{
+               try {
+                  const ascendingParam = ascending.toString();
+                  
+                  const artistResponse = await fetch(`http://localhost:3000/lifetime-artists/${userId}?sort=${sortMethod}&offset=0&ascending=${ascendingParam}`, requestOptions);
+                  
+                  if (artistResponse.ok) {
+                     const lifetimeArtistData = await artistResponse.json();
+                     
+                     setArtistData(lifetimeArtistData.artists);
+                     setHasMoreArtists(lifetimeArtistData.pagination.hasMore);
+                     
+                     localStorage.setItem(`lifetime_artists_${sortMethod}_${ascending}`, JSON.stringify(lifetimeArtistData.artists));
+                     localStorage.setItem(`lifetime_artists_timestamp_${sortMethod}_${ascending}`, Date.now().toString());
+                     
+                     console.log(`Cached lifetime artist data sorted by ${sortMethod} in ${ascending ? 'ascending' : 'descending'} order`);
+                  } else {
+                     console.error("Error fetching lifetime artist data:", artistResponse.status);
+                  }
+               } catch (err) {
+                  console.error("Error fetching lifetime artist data:", err);
                }
-            } catch (err) {
-               console.error("Error fetching lifetime data:", err);
             }
          }
          else{ // Fetching regular stats from spotify api
@@ -289,12 +333,12 @@ export default function Stats() {
             
             // Combine the new artists with existing ones
             const combinedArtists = {
-               ...artistLifetimeData,
-               items: [...artistLifetimeData.items, ...moreArtistsData.artists.items]
+               ...artistData,
+               items: [...artistData.items, ...moreArtistsData.artists.items]
             };
             
             // Update state
-            setArtistLifetimeData(combinedArtists);
+            setArtistData(combinedArtists);
             setArtistOffset(nextOffset);
             
             // Update the cache
@@ -322,7 +366,9 @@ export default function Stats() {
       setSortMethod(newSort);
       setTrackData(null);
       setTrackOffset(0);
+      setArtistOffset(0);
       setHasMoreTracks(true);
+      setHasMoreArtists(true);
    }
    
    const handleShowAllArtistsChange = (showAllArtists) => {
@@ -470,21 +516,21 @@ export default function Stats() {
                            onChange={handleOrderChange}
                         />
                      </div>
-                     {artistLifetimeData && (
+                     {artistData && (
                         <div className={styles.cardContainer}>
-                           {artistLifetimeData.items.map((artist, index) => (
+                           {artistData.items.map((artist, index) => (
                               <div key={`${artist.name}-${sortMethod}-${index}`} className={styles.cardItem}>
                                  {/* Artist Image */}
                                  <Image 
-                                    src={artist.images[0].url} 
-                                    alt={artist.name} 
+                                    src={artist["images"][0]["url"]} 
+                                    alt={artist["name"]} 
                                     width={160} 
                                     height={160}
                                     className={styles.cardArtistImage}
                                  />
                                  
                                  <p className={styles.cardTitle}>
-                                    {index + 1}. {artist.name}
+                                    {index + 1}. {artist["name"]}
                                  </p>
                                  
                                  {/* Artist Stats */}
