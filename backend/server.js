@@ -313,8 +313,8 @@ async function processImportInBackground(userId, files, accessToken) {
          }
       }
 
-      // Remove tracks with zero minutes listened
-      console.log("Removing interactions with zero minutes listened...");
+      // Remove tracks with listens less than threshold
+      console.log("Rmeoving interactions with less than threshold minutes");
       setTimeout(() => {
          sendProgressUpdate(connection, {
             status: "processing",
@@ -323,13 +323,12 @@ async function processImportInBackground(userId, files, accessToken) {
          });
       }, 2000);
 
-      console.log("Rmeoving interactions with less than threshold minutes")
       const { deleted, count, error: cleanupError } = await removeTracksUnderThreshold(userId);
       
       if( cleanupError ){
          console.error("Error cleaning up tracks", cleanupError);
       } else{
-         console.log(`Removed ${count} tracks with zero minutes listened`);
+         console.log(`Removed ${count} tracks with less than threshold minutes`);
       }
 
 
@@ -550,12 +549,12 @@ app.delete('/user/:userId', async (req, res) =>{
 app.put('/settings/:userId', async (req, res) => {
 
    const userId = req.params.userId;
-   const { skip_threshold, default_time_range, theme } = req.body;
+   const { skip_threshold, min_minutes_threshold, theme } = req.body;
 
    const udpateFields = {};
    //console.log(`The skip threshold received is ${skip_threshold}`);
    if( skip_threshold !== undefined ) udpateFields.skip_threshold = skip_threshold;
-   if( default_time_range !== undefined ) udpateFields.default_time_range = default_time_range;
+   if( min_minutes_threshold !== undefined ) udpateFields.min_minutes_threshold = min_minutes_threshold;
    if( theme !== undefined ) udpateFields.theme = theme;
 
    if( Object.keys(udpateFields).length === 0 ){
@@ -577,9 +576,10 @@ app.put('/settings/:userId', async (req, res) => {
       }
 
       let recalculationResult = null;
-
+      
       // If skip threshold was updated, recalculate statistics
       if( skip_threshold !== undefined ){
+         
          //console.log(`Recalculating track statistics with new threshold ${skip_threshold}`);
          recalculationResult = await recalculateCounts(userId, skip_threshold);
 
