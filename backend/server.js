@@ -8,6 +8,7 @@ const { upsertUserProfile } = require('./db/userProfile');
 const { upsertTrack } = require('./db/trackInfo');
 const { upsertTrackInteractions,updateTrackInteraction, calculateMinutesListened, recalculateCounts, removeTracksUnderThreshold } = require('./db/trackInteractions');
 const { initializeUserSettings } = require('./db/userSettings');
+const { upsertArtistInteraction } = require('./db/artistInteractions');
 const supabase = require('../lib/supabaseclient');
 
 const app = express();
@@ -925,6 +926,76 @@ app.get('/lifetime-stats/:userId', async (req, res) => {
    } catch (error) {
       console.error("Error fetching lifetime stats");
       res.status(500).json({error: "Internal server error"});
+   }
+});
+
+// Endpoint to fetch lifetime artists from the database
+app.get('/lifetime-artists/:userId', async (req, res) => {
+   const userId = req.params.userId;
+   const sortMethod = req.query.sort || "listen_count";
+   const offset = parseInt(req.query.offset) || 0;
+   const ascending = req.query.ascending === "true";
+   const defaultImagePath = "http://localhost:8081/images/no_image_provided.png";
+
+   try {
+   // Error checking just in case
+   const validSortMethods = ["listen_count", "skip_count", "minutes_listened"];
+   if (!validSortMethods.includes(sortMethod)) {
+      return res.status(400).json({ error: "Invalid sort method" });
+   }
+
+   // Get total count for pagination info
+   const { count, error: countError } = await supabase
+      .from("Artist Interactions")
+      .select('*', { count: 'exact', head: true })
+      .eq("user_id", userId);
+
+   if (countError) {
+      console.error("Error getting artist count:", countError);
+      return res.status(500).json({ error: "Error fetching artist count" });
+   }
+
+   // Get top artists with stats
+   const { data: artistData, error: artistError } = await supabase
+      .from("Artist Interactions")
+      .select('*')
+      .eq("user_id", userId)
+      .order(sortMethod, { ascending: ascending })
+      .range(offset, offset + 49);
+
+   if (artistError) {
+      console.error("Error fetching artist stats:", artistError);
+      return res.status(500).json({ error: "Error fetching artist stats" });
+   }
+
+   // Format the data to match the structure expected by front end
+   const formattedArtists = {
+      items: artistData.map(item => ({
+         name: item["artist_name"],
+         stats: {
+            listen_count: item["listen_count"],
+            skip_count: item["skip_count"],
+            minutes_listened: item["minutes_listened"]
+         },
+         // Use a default image for now, you can enhance this later to fetch real artist images
+         images: [defaultImagePath]
+      }))
+   };
+
+   // Return the formatted artists
+   res.json({
+      artists: formattedArtists,
+      pagination: {
+         total: count,
+         offset: offset,
+         limit: 50,
+         hasMore: offset + 50 < count
+      }
+   });
+
+   } catch (error) {
+   console.error("Error fetching lifetime artist stats:", error);
+   res.status(500).json({ error: "Internal server error" });
    }
 });
 
