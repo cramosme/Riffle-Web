@@ -8,7 +8,7 @@ const { upsertUserProfile } = require('./db/userProfile');
 const { upsertTrack } = require('./db/trackInfo');
 const { upsertTrackInteractions,updateTrackInteraction, calculateMinutesListened, recalculateCounts, removeTracksUnderThreshold } = require('./db/trackInteractions');
 const { initializeUserSettings } = require('./db/userSettings');
-const { upsertArtistInteraction } = require('./db/artistInteractions');
+const { upsertArtistInteraction, getArtistImage, updateArtistInteraction } = require('./db/artistInteractions');
 const supabase = require('../lib/supabaseclient');
 
 const app = express();
@@ -84,6 +84,49 @@ async function getTrackData(trackIds, accessToken) {
       console.error("Error fetching track durations:", error.message);
       return {};
    }
+}
+
+async function processArtistData(uniqueArtists, userId, accessToken) {
+   console.log(`Processing ${uniqueArtists.size} unique artists...`);
+   
+   const processedArtists = 0;
+   
+   // Process in batches to avoid rate limiting
+   const batchSize = 10;
+   const artistsArray = Array.from(uniqueArtists);
+   
+   for (let i = 0; i < artistsArray.length; i += batchSize) {
+     const batch = artistsArray.slice(i, i + batchSize);
+     
+     // Process each artist in the batch
+     await Promise.all(batch.map(async (artistName) => {
+       try {
+         const artistImage = await getArtistImage(artistName, accessToken);
+         
+         // Create initial artist record
+         await upsertArtistInteraction({
+            userId,
+            artistName,
+            listenCount: 0,
+            skipCount: 0,
+            minutesListened: 0,
+            artistImage
+         });
+         
+         processedArtists++;
+         
+         // Delay to avoid rate limiting
+         if (processedArtists % 50 === 0) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+         }
+      } catch (error) {
+         console.error(`Error processing artist ${artistName}:`, error);
+      }
+      }));
+   }
+   
+   console.log(`Completed processing ${processedArtists} artists`);
+   return processedArtists;
 }
 
 // Processing function
@@ -881,6 +924,9 @@ app.post('/track-interaction/:userId/:trackId', async (req, res) => {
          skipThreshold,
          trackDuration
       );
+
+      // Update artist interactions
+      await updateArtistInteraction(userId, artistName, action === 'listened' ? 1 : 0, action === 'skipped' ? 1 : 0, minutesListened, token);
       
       if (error) {
          console.error('Error updating track interaction:', error);
@@ -996,7 +1042,6 @@ app.get('/lifetime-artists/:userId', async (req, res) => {
    const sortMethod = req.query.sort || "listen_count";
    const offset = parseInt(req.query.offset) || 0;
    const ascending = req.query.ascending === "true";
-   const defaultImagePath = "http://localhost:8081/images/no_image_provided.png";
 
    try {
       // Error checking just in case
@@ -1035,7 +1080,7 @@ app.get('/lifetime-artists/:userId', async (req, res) => {
             id: item["id"].toString(),
             name: item["artist_name"],
             // Use a default image for now, you can enhance this later to fetch real artist images
-            images: [{ url: defaultImagePath }],
+            images: [{ url: item["artist_image"] }],
             stats: {
                listen_count: item["listen_count"],
                skip_count: item["skip_count"],
@@ -1043,6 +1088,8 @@ app.get('/lifetime-artists/:userId', async (req, res) => {
             },
          }))
       };
+
+      console.log(formattedArtists);
 
       // Return the formatted artists
       res.json({
