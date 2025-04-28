@@ -1,4 +1,3 @@
-const { list } = require('postcss');
 const supabase = require('../../lib/supabaseclient');
 
 // This function is used to instantiate track interactions for each user, is called as we read through the json passed in import page

@@ -23,6 +23,8 @@ export default function Stats() {
    const [isLoading, setIsLoading] = useState(true);
    const [trackOffset, setTrackOffset] = useState(0);
    const [isLoadingMore, setIsLoadingMore] = useState(false);
+   const [isLoadingMoreArtists, setIsLoadingMoreArtists] = useState(false);
+   const [hasMoreArtists, setHasMoreArtists] = useState(true);
    const [hasMoreTracks, setHasMoreTracks] = useState(true);
    const [ascending, setAscending] = useState(false);
 
@@ -248,11 +250,73 @@ export default function Stats() {
       }
    }
 
+   // Function to load more artists
+   async function loadMoreArtists() {
+      if (isLoadingMoreArtists || !hasMoreArtists) return;
+      
+      setIsLoadingMoreArtists(true);
+      
+      try {
+         const userId = localStorage.getItem("user_id");
+         const token = localStorage.getItem("access_token");
+         const nextOffset = artistOffset + 50;
+         const ascendingParam = ascending.toString();
+         
+         // Fetch the next batch of artists
+         const response = await fetch(
+            `http://localhost:3000/lifetime-artists/${userId}?sort=${sortMethod}&offset=${nextOffset}&ascending=${ascendingParam}`,
+            {
+               headers: {
+               'Authorization': `Bearer ${token}`
+               }
+            }
+         );
+         
+         if (response.ok) {
+            const moreArtistsData = await response.json();
+            
+            // If we got fewer than 50 artists, there are no more to load
+            if (moreArtistsData.artists.items.length < 50) {
+               setHasMoreArtists(false);
+            }
+            
+            // If we got no artists, there are no more to load
+            if (moreArtistsData.artists.items.length === 0) {
+               setHasMoreArtists(false);
+               setIsLoadingMoreArtists(false);
+               return;
+            }
+            
+            // Combine the new artists with existing ones
+            const combinedArtists = {
+               ...artistLifetimeData,
+               items: [...artistLifetimeData.items, ...moreArtistsData.artists.items]
+            };
+            
+            // Update state
+            setArtistLifetimeData(combinedArtists);
+            setArtistOffset(nextOffset);
+            
+            // Update the cache
+            localStorage.setItem(`lifetime_artists_${sortMethod}_${ascending}`, JSON.stringify(combinedArtists));
+            localStorage.setItem(`lifetime_artists_timestamp_${sortMethod}_${ascending}`, Date.now().toString());
+         } else {
+            console.error("Error fetching more artists:", response.status);
+            setHasMoreArtists(false);
+         }
+      } catch (error) {
+         console.error("Error loading more artists:", error);
+         setHasMoreArtists(false);
+      } finally {
+         setIsLoadingMoreArtists(false);
+      }
+   }
+   
    // Handle time range change
    const handleTimeRangeChange = (newRange) => {
       setTimeRange(newRange);
    }
-
+   
    // Handle sorting change
    const handleSortingChange = (newSort) => {
       setSortMethod(newSort);
@@ -260,18 +324,22 @@ export default function Stats() {
       setTrackOffset(0);
       setHasMoreTracks(true);
    }
-
+   
    const handleShowAllArtistsChange = (showAllArtists) => {
       setShowAllArtists(showAllArtists);
    }
-
+   
    const handleShowAllTracksChange = (showAllTracks) => {
       setShowAllTracks(showAllTracks);
    }
-
+   
    const handleLoadMoreTracks = () => {
       loadMoreTracks();
    }
+   
+   const handleLoadMoreArtists = () => {
+      loadMoreArtists();
+   };
 
    const handleOrderChange = (ascending) => {
       setAscending(ascending);
@@ -391,6 +459,57 @@ export default function Stats() {
                   </>
                ) : (
                   <>
+                     <div className={styles.displayTitle}>
+                        <p className={styles.lifetimeTitle}>Top Artists</p>
+                        <SortingDropdown
+                           selectedMethod={sortMethod}
+                           onChange={handleSortingChange}
+                        />
+                        <OrderButton
+                           isAscending={ascending}
+                           onChange={handleOrderChange}
+                        />
+                     </div>
+                     {artistLifetimeData && (
+                        <div className={styles.cardContainer}>
+                           {artistLifetimeData.items.map((artist, index) => (
+                              <div key={`${artist.name}-${sortMethod}-${index}`} className={styles.cardItem}>
+                                 {/* Artist Image */}
+                                 <Image 
+                                    src={artist.images[0].url} 
+                                    alt={artist.name} 
+                                    width={160} 
+                                    height={160}
+                                    className={styles.cardArtistImage}
+                                 />
+                                 
+                                 <p className={styles.cardTitle}>
+                                    {index + 1}. {artist.name}
+                                 </p>
+                                 
+                                 {/* Artist Stats */}
+                                 <div className={styles.statsContainer}>
+                                    <div className={styles.statItem}>
+                                       <span>Plays: {artist.stats.listen_count}</span>
+                                    </div>
+                                    <div className={styles.statItem}>
+                                       <span>Minutes: {artist.stats.minutes_listened.toFixed(2)}</span>
+                                    </div>
+                                    <div className={styles.statItem}>
+                                       <span>Skips: {artist.stats.skip_count}</span>
+                                    </div>
+                                 </div>
+                              </div>
+                           ))}
+                        </div>
+                     )}
+                     {hasMoreArtists && (
+                     <LoadMoreButton
+                        isLoading={isLoadingMoreArtists}
+                        hasMore={hasMoreArtists}
+                        onClick={handleLoadMoreArtists}
+                     />
+                     )}
                      <div className={styles.displayTitle}>
                         <p className={styles.lifetimeTitle}>Top Tracks</p>
                         <SortingDropdown
