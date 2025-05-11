@@ -8,7 +8,7 @@ const { upsertUserProfile } = require('./db/userProfile');
 const { upsertTrack } = require('./db/trackInfo');
 const { upsertTrackInteractions,updateTrackInteraction, calculateMinutesListened, recalculateCounts, removeTracksUnderThreshold } = require('./db/trackInteractions');
 const { initializeUserSettings } = require('./db/userSettings');
-const { upsertArtistInteraction } = require('./db/artistInteractions');
+const { upsertArtistInteraction, getArtistImage, updateArtistInteraction } = require('./db/artistInteractions');
 const supabase = require('../lib/supabaseclient');
 
 const app = express();
@@ -86,6 +86,49 @@ async function getTrackData(trackIds, accessToken) {
    }
 }
 
+async function processArtistData(uniqueArtists, userId, accessToken) {
+   console.log(`Processing ${uniqueArtists.size} unique artists...`);
+   
+   const processedArtists = 0;
+   
+   // Process in batches to avoid rate limiting
+   const batchSize = 10;
+   const artistsArray = Array.from(uniqueArtists);
+   
+   for (let i = 0; i < artistsArray.length; i += batchSize) {
+     const batch = artistsArray.slice(i, i + batchSize);
+     
+     // Process each artist in the batch
+     await Promise.all(batch.map(async (artistName) => {
+       try {
+         const artistImage = await getArtistImage(artistName, accessToken);
+         
+         // Create initial artist record
+         await upsertArtistInteraction({
+            userId,
+            artistName,
+            listenCount: 0,
+            skipCount: 0,
+            minutesListened: 0,
+            artistImage
+         });
+         
+         processedArtists++;
+         
+         // Delay to avoid rate limiting
+         if (processedArtists % 50 === 0) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+         }
+      } catch (error) {
+         console.error(`Error processing artist ${artistName}:`, error);
+      }
+      }));
+   }
+   
+   console.log(`Completed processing ${processedArtists} artists`);
+   return processedArtists;
+}
+
 // Processing function
 async function processImportInBackground(userId, files, accessToken) {
 
@@ -118,6 +161,7 @@ async function processImportInBackground(userId, files, accessToken) {
       // Track unique track ids for calculations later
       const uniqueTracks = new Set();
       const uniqueTrackIds = new Set();
+      const uniqueArtists = new Set();
       let processedEntries = 0;
       let skippedEntries = 0; // For tracks with no uri (User uploaded tracks)
       let currentFileIndex = 0;
@@ -143,16 +187,21 @@ async function processImportInBackground(userId, files, accessToken) {
             // Extract the track id from the URI
             const trackId = entry["spotify_track_uri"].split(':')[2];
 
+            // Get track name and artist name from the entry
+            const trackName = entry["master_metadata_track_name"] || "Unknown Track";
+            const artistName = entry["master_metadata_album_artist_name"] || "Unknown Artist";
+
             // Collect unique track ids for fetching the total length of song (not included in json provided by spotify)
             uniqueTrackIds.add(trackId);
+            uniqueArtists.add(artistName);
 
             // Create a track info object with proper structure
             const trackInfo = {
                userId,
                trackId,
+               trackName,
+               artistName,
                msPlayed: entry["ms_played"],  // Directly use the value from entry
-               trackName: entry["master_metadata_track_name"] || "Unknown Track",
-               artistName: entry["master_metadata_album_artist_name"] || "Unknown Artist",
                albumName: entry["master_metadata_album_album_name"] || "Unknown Album"
             };
 
@@ -193,20 +242,24 @@ async function processImportInBackground(userId, files, accessToken) {
          phase: "fetching_track_data"
       });
 
-      // Used to group interactions by track id
+      // Used to group interactions by track name and artist
       const trackInteractions = new Map();
 
       for( const trackInfo of uniqueTracks ){
-         if( !trackInteractions.has(trackInfo["trackId"]) ) {
-            trackInteractions.set(trackInfo["trackId"], []);
+         const key = `${trackInfo.trackName}:::${trackInfo.artistName}`;
+         if (!trackInteractions.has(key)) {
+            trackInteractions.set(key, {
+               trackName: trackInfo.trackName,
+               artistName: trackInfo.artistName,
+               interactions: []
+            });
          }
-         trackInteractions.get(trackInfo["trackId"]).push(trackInfo);
+         trackInteractions.get(key).interactions.push(trackInfo);
       }
 
       // Process all track interactions
       let interactionCount = 0;
       const totalTracks = trackInteractions.size;
-      const batchSize = 50; // Process in batches
       
       console.log("Processing track interactions...")
       setTimeout( () => {
@@ -217,16 +270,20 @@ async function processImportInBackground(userId, files, accessToken) {
          });
       }, 2000);
 
-      for await (const [trackId, interactions] of trackInteractions) {
+      for await (const [groupKey, group] of trackInteractions) {
          try{
+
+            const { trackName, artistName, interactions } = group;
+
             const firstInteraction = interactions[0];
+            const trackId = firstInteraction["trackId"];
             const { duration_ms, album_image } = apiTrackData[trackId] || { duration_ms: 0, album_image: null };
          
             // Prepare track data
             const trackData = {
                id: trackId,
-               name: firstInteraction.trackName || "Unknown Track",
-               artists: [{ name: firstInteraction.artistName || "Unknown Artist" }],
+               name: trackName,
+               artists: [{ name: artistName }],
                album: { 
                   name: firstInteraction.albumName || "Unknown Album", 
                   images: album_image ? [{ url: album_image }] : [] 
@@ -248,7 +305,9 @@ async function processImportInBackground(userId, files, accessToken) {
 
                const { trackData: interactionData, error: interactionError } = await upsertTrackInteractions(
                   userId, 
-                  trackId, 
+                  interaction["trackId"],
+                  trackName,
+                  artistName,
                   interaction.msPlayed || 0, // Ensure msPlayed is valid
                   duration_ms
                );
@@ -268,7 +327,7 @@ async function processImportInBackground(userId, files, accessToken) {
                   progress: 35 + Math.round((interactionCount/totalTracks) * 50), // Up to 85
                   phase: "processing_interactions",
                   interactionCount,
-                  totalTracks
+                  totalTracks: totalTracks
                });
             }
          } catch (error) {
@@ -289,28 +348,43 @@ async function processImportInBackground(userId, files, accessToken) {
          });
       }, 2000);
 
-      let calculatedTracks = 0;
-      const totalTrackIds = uniqueTrackIds.size;
+      // Get all unique track interactions that we've created
+      const { data: allInteractions, error: fetchError } = await supabase
+         .from('Track Interactions')
+         .select('track_name, artist_name')
+         .eq('user_id', userId);
 
-      for( const trackId of uniqueTrackIds ){
-         try {
-            await calculateMinutesListened(userId, trackId);
-            calculatedTracks++;
 
-            // Update progress
-            if( calculatedTracks % 100 === 0 || calculatedTracks === totalTrackIds ){
-               //console.log("Calculated 100 tracks...");
-               sendProgressUpdate(connection, {
-                  status: "processing",
-                  progress: 85 + Math.round((calculatedTracks/totalTrackIds) * 10), // 10% for calculating
-                  phase: "calculating",
-                  calculatedTracks,
-                  totalTracks: totalTrackIds
-               });
+      if( fetchError ){
+         console.error("Error fetching interactions for calculation:",fetchError);
+      }
+      else{
+         let calculatedTracks = 0;
+         const totalInteractions = allInteractions.length;
+         // Calculate minutes listened for each track using the new constraint
+         for (const interaction of allInteractions) {
+            try {
+               await calculateMinutesListened(
+                  userId, 
+                  interaction.track_name, 
+                  interaction.artist_name
+               );
+               calculatedTracks++;
+
+               // Update progress
+               if (calculatedTracks % 100 === 0 || calculatedTracks === totalInteractions) {
+                  sendProgressUpdate(connection, {
+                     status: "processing",
+                     progress: 85 + Math.round((calculatedTracks/totalInteractions) * 10), // 10% for calculating
+                     phase: "calculating",
+                     calculatedTracks,
+                     totalInteractions
+                  });
+               }
+            } catch (err) {
+               console.error(`Error calculating minutes for track ${interaction.track_name}:`, err);
+               calculatedTracks++;
             }
-         } catch (err) {
-            console.error(`Error calculating minutes for track ${trackId}:`, err);
-            calculatedTracks++;
          }
       }
 
@@ -793,13 +867,39 @@ app.get('/track-stats/:userId/:trackId', async (req, res) => {
 // Endpoint to update track interaction when a song is played/skipped
 app.post('/track-interaction/:userId/:trackId', async (req, res) => {
    const { userId, trackId } = req.params;
-   const { playDuration, trackDuration } = req.body;
-      
+   const { playDuration, trackDuration, trackName: trackFromClient, artistName: artistFromClient } = req.body;
+   const token = req.headers.authorization?.split(' ')[1];   
+
    if (!playDuration || !trackDuration) {
       return res.status(400).json({ error: 'Missing required fields' });
    }
       
    try {
+
+      let trackName = trackFromClient;
+      let artistName = artistFromClient;
+
+      // Check if we're using default values that need improvement
+      if ((trackName === "Unknown Track" || artistName === "Unknown Artist") && token) {
+         // Try to get better data from the API
+         try {
+            const response = await axios.get(`https://api.spotify.com/v1/tracks/${trackId}`, {
+               headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Only override if we're using the default value
+            if (clientTrackName === "Unknown Track") {
+               trackName = response.data.name || trackName;
+            }
+            
+            if (clientArtistName === "Unknown Artist" && response.data.artists && response.data.artists.length > 0) {
+               artistName = response.data.artists[0].name || artistName;
+            }
+         } catch (error) {
+            console.log("Couldnt get track info from spotify:", error);
+         }
+      }
+
       // First, get the user's skip threshold
       const { data: settings, error: settingsError } = await supabase
          .from('Settings')
@@ -817,11 +917,16 @@ app.post('/track-interaction/:userId/:trackId', async (req, res) => {
       // Update the track interaction
       const { data, error } = await updateTrackInteraction(
          userId, 
-         trackId, 
+         trackId,
+         trackName,
+         artistName, 
          playDuration, 
          skipThreshold,
          trackDuration
       );
+
+      // Update artist interactions
+      await updateArtistInteraction(userId, artistName, action === 'listened' ? 1 : 0, action === 'skipped' ? 1 : 0, minutesListened, token);
       
       if (error) {
          console.error('Error updating track interaction:', error);
@@ -877,6 +982,8 @@ app.get('/lifetime-stats/:userId', async (req, res) => {
          .from("Track Interactions")
          .select(`
             track_id,
+            track_name,
+            artist_name,
             listen_count,
             skip_count,
             minutes_listened,
@@ -899,8 +1006,8 @@ app.get('/lifetime-stats/:userId', async (req, res) => {
       const formattedTracks = {
          items: trackData.map(item => ({
             id: item["track_id"],
-            name: item["Tracks"]["track_name"],
-            artists: [{ name: item["Tracks"]["artist"] }],
+            name: item["track_name"],
+            artists: [{ name: item["artist_name"] }],
             album: {
                images: [{ url: item["Tracks"]["album_image"] }]
             },
@@ -935,67 +1042,68 @@ app.get('/lifetime-artists/:userId', async (req, res) => {
    const sortMethod = req.query.sort || "listen_count";
    const offset = parseInt(req.query.offset) || 0;
    const ascending = req.query.ascending === "true";
-   const defaultImagePath = "http://localhost:8081/images/no_image_provided.png";
 
    try {
-   // Error checking just in case
-   const validSortMethods = ["listen_count", "skip_count", "minutes_listened"];
-   if (!validSortMethods.includes(sortMethod)) {
-      return res.status(400).json({ error: "Invalid sort method" });
-   }
-
-   // Get total count for pagination info
-   const { count, error: countError } = await supabase
-      .from("Artist Interactions")
-      .select('*', { count: 'exact', head: true })
-      .eq("user_id", userId);
-
-   if (countError) {
-      console.error("Error getting artist count:", countError);
-      return res.status(500).json({ error: "Error fetching artist count" });
-   }
-
-   // Get top artists with stats
-   const { data: artistData, error: artistError } = await supabase
-      .from("Artist Interactions")
-      .select('*')
-      .eq("user_id", userId)
-      .order(sortMethod, { ascending: ascending })
-      .range(offset, offset + 49);
-
-   if (artistError) {
-      console.error("Error fetching artist stats:", artistError);
-      return res.status(500).json({ error: "Error fetching artist stats" });
-   }
-
-   // Format the data to match the structure expected by front end
-   const formattedArtists = {
-      items: artistData.map(item => ({
-         name: item["artist_name"],
-         stats: {
-            listen_count: item["listen_count"],
-            skip_count: item["skip_count"],
-            minutes_listened: item["minutes_listened"]
-         },
-         // Use a default image for now, you can enhance this later to fetch real artist images
-         images: [defaultImagePath]
-      }))
-   };
-
-   // Return the formatted artists
-   res.json({
-      artists: formattedArtists,
-      pagination: {
-         total: count,
-         offset: offset,
-         limit: 50,
-         hasMore: offset + 50 < count
+      // Error checking just in case
+      const validSortMethods = ["listen_count", "skip_count", "minutes_listened"];
+      if (!validSortMethods.includes(sortMethod)) {
+         return res.status(400).json({ error: "Invalid sort method" });
       }
-   });
 
+      // Get total count for pagination info
+      const { count, error: countError } = await supabase
+         .from("Artist Interactions")
+         .select('*', { count: 'exact', head: true })
+         .eq("user_id", userId);
+
+      if (countError) {
+         console.error("Error getting artist count:", countError);
+         return res.status(500).json({ error: "Error fetching artist count" });
+      }
+
+      // Get top artists with stats
+      const { data: artistData, error: artistError } = await supabase
+         .from("Artist Interactions")
+         .select('*')
+         .eq("user_id", userId)
+         .order(sortMethod, { ascending: ascending })
+         .range(offset, offset + 49);
+
+      if (artistError) {
+         console.error("Error fetching artist stats:", artistError);
+         return res.status(500).json({ error: "Error fetching artist stats" });
+      }
+
+      // Format the data to match the structure expected by front end
+      const formattedArtists = {
+         items: artistData.map(item => ({
+            id: item["id"].toString(),
+            name: item["artist_name"],
+            // Use a default image for now, you can enhance this later to fetch real artist images
+            images: [{ url: item["artist_image"] }],
+            stats: {
+               listen_count: item["listen_count"],
+               skip_count: item["skip_count"],
+               minutes_listened: item["minutes_listened"]
+            },
+         }))
+      };
+
+      console.log(formattedArtists);
+
+      // Return the formatted artists
+      res.json({
+         artists: formattedArtists,
+         pagination: {
+            total: count,
+            offset: offset,
+            limit: 50,
+            hasMore: offset + 50 < count
+         }
+      });
    } catch (error) {
-   console.error("Error fetching lifetime artist stats:", error);
-   res.status(500).json({ error: "Internal server error" });
+      console.error("Error fetching lifetime artist stats:", error);
+      res.status(500).json({ error: "Internal server error" });
    }
 });
 
